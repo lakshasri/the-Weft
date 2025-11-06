@@ -23,6 +23,17 @@ header {
   border-bottom: 2px solid black;
 }
 
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  height: 50px;
+  width: auto;
+}
+
 header h1 {
   font-size: 1.5rem;
   font-weight: bold;

@@ -1,308 +1,143 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>the-Weft SCM</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <img src="assets/logo.png" alt="the-Weft logo" class="logo">
+      <h1>the-Weft Supply Chain</h1>
+    </div>
+    <nav>
+      <button id="logout-btn" hidden>Logout</button>
+    </nav>
+  </header>
 
-<html lang="en"><html lang="en">
-
-<head>  <head>
-
-  <meta charset="UTF-8">    <meta charset="UTF-8" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-
-  <title>the-Weft SCM</title>    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="style.css">    <title>the-Weft SCM</title>
-
-</head>    <link rel="stylesheet" href="login.css" />
-
-<body>  </head>
-
-  <header>  <body>
-
-    <h1>the-Weft Supply Chain</h1>    <header class="site-header">
-
-    <nav>      <div class="brand">
-
-      <button id="logout-btn" hidden>Logout</button>        <img src="assets/logo.png" alt="the-Weft logo" class="brand-logo" />
-
-    </nav>        <h1 class="brand-name">the-Weft</h1>
-
-  </header>      </div>
-
-      <nav class="site-actions">
-
-  <main id="app">        <button id="logout-btn" class="btn ghost" hidden>Logout</button>
-
-    <!-- Auth View -->      </nav>
-
-    <section id="auth-view" class="view">    </header>
-
+  <main id="app">
+    <!-- Auth View -->
+    <section id="auth-view" class="view">
       <div class="card">
+        <h2 id="auth-title">Sign In</h2>
 
-        <h2 id="auth-title">Sign In</h2>    <main class="container">
-
-              <section id="auth-view" class="card auth-card">
-
-        <!-- Login Form -->        <div class="two-col" style="grid-template-columns: 1fr auto; align-items: center;">
-
-        <form id="login-form">          <div>
-
-          <div class="form-group">            <h2 class="title" id="auth-title">Sign in</h2>
-
-            <label>Email</label>            <p class="subtitle" id="auth-subtitle">Access your supply chain dashboard</p>
-
-            <input type="email" name="email" required>          </div>
-
-          </div>          <div class="auth-switch">
-
-          <div class="form-group">            <button id="show-signin" class="btn ghost" type="button" hidden>Sign in</button>
-
-            <label>Password</label>            <button id="show-signup" class="btn ghost" type="button">Create account</button>
-
-            <input type="password" name="password" required>          </div>
-
-          </div>        </div>
-
+        <!-- Login Form -->
+        <form id="login-form">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" placeholder="Password" required>
+          </div>
           <button type="submit" class="btn">Sign In</button>
+          <p id="login-error" class="error"></p>
+        </form>
 
-          <p id="login-error" class="error"></p>        <form id="login-form" autocomplete="on">
-
-        </form>          <div class="input-group">
-
-            <label for="email">Email</label>
-
-        <!-- Signup Form (hidden by default) -->            <input
-
-        <form id="signup-form" hidden>              type="email"
-
-          <div class="form-group">              id="email"
-
-            <label>Full Name</label>              name="email"
-
-            <input type="text" name="FullName" required>              placeholder="you@example.com"
-
-          </div>              required
-
-          <div class="form-group">            />
-
-            <label>Email</label>          </div>
-
-            <input type="email" name="Email" required>          <div class="input-group">
-
-          </div>            <label for="password">Password</label>
-
-          <div class="form-group">            <input
-
-            <label>Password</label>              type="password"
-
-            <input type="password" name="Password" required>              id="password"
-
-          </div>              name="password"
-
-          <div class="form-group">              placeholder="Enter your password"
-
-            <label>Role</label>              required
-
-            <select name="Role" required>            />
-
-              <option value="">Select...</option>          </div>
-
-              <option value="Customer">Customer</option>          <button type="submit" class="btn primary">Sign in</button>
-
-              <option value="Retailer">Retailer</option>          <p id="login-error" class="error-message" aria-live="polite"></p>
-
-              <option value="Manufacturer">Manufacturer</option>        </form>
-
+        <!-- Signup Form (hidden by default) -->
+        <form id="signup-form" hidden>
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="FullName" placeholder="John Doe" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="Email" placeholder="your@email.com" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="Password" placeholder="Create password" required>
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select name="Role" required>
+              <option value="">Select...</option>
+              <option value="Customer">Customer</option>
+              <option value="Retailer">Retailer</option>
+              <option value="Manufacturer">Manufacturer</option>
               <option value="Distributor">Distributor</option>
-
-            </select>        <form id="signup-form" autocomplete="on" hidden>
-
-          </div>          <div class="input-group">
-
-          <div class="form-group">            <label for="signup-fullname">Full name</label>
-
-            <label>Address</label>            <input type="text" id="signup-fullname" name="FullName" placeholder="Jane Doe" required />
-
-            <textarea name="Address" rows="2"></textarea>          </div>
-
-          </div>          <div class="input-group">
-
-          <button type="submit" class="btn">Create Account</button>            <label for="signup-email">Email</label>
-
-          <p id="signup-error" class="error"></p>            <input type="email" id="signup-email" name="Email" placeholder="you@example.com" required />
-
-        </form>          </div>
-
-          <div class="input-group">
-
-        <p class="toggle">            <label for="signup-password">Password</label>
-
-          <button type="button" id="toggle-form" class="link">Create account</button>            <input type="password" id="signup-password" name="Password" placeholder="Create a password" required />
-
-        </p>          </div>
-
-      </div>          <div class="input-group">
-
-    </section>            <label for="signup-role">Role</label>
-
-            <select id="signup-role" name="Role" required>
-
-    <!-- Dashboard View -->              <option value="Customer">Customer</option>
-
-    <section id="dashboard-view" class="view" hidden>              <option value="Retailer">Retailer</option>
-
-      <div class="dashboard-header">              <option value="Manufacturer">Manufacturer</option>
-
-        <h2 id="user-name">Welcome</h2>              <option value="Distributor">Distributor</option>
-
-        <p id="user-role"></p>            </select>
-
-      </div>          </div>
-
-          <div class="input-group">
-
-      <!-- Manufacturer Section -->            <label for="signup-address">Address</label>
-
-      <section id="manufacturer-panel" class="panel" hidden>            <textarea id="signup-address" name="Address" rows="2" placeholder="Your address"></textarea>
-
-        <h3>Manufacturer</h3>          </div>
-
-        <form id="product-form">          <button type="submit" class="btn primary">Create account</button>
-
-          <div class="form-group">          <p id="signup-error" class="error-message" aria-live="polite"></p>
-
-            <label>Product Name</label>        </form>
-
-            <input type="text" name="ProductName" required>      </section>
-
+            </select>
           </div>
+          <div class="form-group">
+            <label>Address</label>
+            <textarea name="Address" rows="2" placeholder="Your address"></textarea>
+          </div>
+          <button type="submit" class="btn">Create Account</button>
+          <p id="signup-error" class="error"></p>
+        </form>
 
-          <div class="form-group">      <section id="dashboard-view" class="dashboard" hidden>
+        <p class="toggle">
+          <button type="button" id="toggle-form" class="link">Create account</button>
+        </p>
+      </div>
+    </section>
 
-            <label>Description</label>        <div class="dashboard-head">
+    <!-- Dashboard View -->
+    <section id="dashboard-view" class="view" hidden>
+      <div class="dashboard-header">
+        <h2 id="user-name">Welcome</h2>
+        <p id="user-role"></p>
+      </div>
 
-            <input type="text" name="Description">          <div>
-
-          </div>            <h2 id="welcome-text">Welcome</h2>
-
-          <button type="submit" class="btn">Create Product</button>            <p class="muted" id="role-text"></p>
-
-          <p id="product-error" class="error"></p>          </div>
-
-        </form>        </div>
-
+      <!-- Manufacturer Section -->
+      <section id="manufacturer-panel" class="panel" hidden>
+        <h3>Manufacturer</h3>
+        <form id="product-form">
+          <div class="form-group">
+            <label>Product Name</label>
+            <input type="text" name="ProductName" placeholder="Product name" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="Description" placeholder="Description">
+          </div>
+          <button type="submit" class="btn">Create Product</button>
+          <p id="product-error" class="error"></p>
+        </form>
         <div id="product-list" class="list"></div>
-
-      </section>        <div id="manufacturer-section" class="panel" hidden>
-
-          <h3>Manufacturer • Your master products</h3>
-
-      <!-- Retailer Section -->          <form id="master-product-form" class="two-col" style="align-items:end;">
-
-      <section id="retailer-panel" class="panel" hidden>            <div class="input-group">
-
-        <h3>Retailer</h3>              <label for="mp-name">Product name</label>
-
-        <h4>Available Products</h4>              <input id="mp-name" name="ProductName" placeholder="Premium Leather Jacket" required />
-
-        <div id="available-products" class="list"></div>            </div>
-
-        <h4 style="margin-top: 2rem;">Your Inventory</h4>            <div class="input-group">
-
-        <div id="retailer-inventory" class="list"></div>              <label for="mp-desc">Description</label>
-
-        <h4 style="margin-top: 2rem;">Orders</h4>              <input id="mp-desc" name="Description" placeholder="Short description" />
-
-        <div id="retailer-orders" class="list"></div>            </div>
-
-      </section>            <button class="btn primary" type="submit">Create</button>
-
-            <p id="mp-error" class="error-message" aria-live="polite"></p>
-
-      <!-- Customer Section -->          </form>
-
-      <section id="customer-panel" class="panel" hidden>          <div id="master-products-grid" class="grid" style="margin-top:0.5rem;"></div>
-
-        <h3>Customer</h3>        </div>
-
-        <h4>Available Products</h4>
-
-        <div id="catalog" class="list"></div>        <div id="retailer-section" class="panel" hidden>
-
-        <h4 style="margin-top: 2rem;">Cart</h4>          <h3>Retailer • Stock products and manage orders</h3>
-
-        <div id="cart" class="list"></div>          <div class="two-col">
-
-        <form id="checkout-form">            <section>
-
-          <div class="form-group">              <h4>Browse master products</h4>
-
-            <label>Shipping Address</label>              <div id="master-products-list" class="grid"></div>
-
-            <textarea name="ShippingAddress" rows="2" required></textarea>            </section>
-
-          </div>            <section>
-
-          <button type="submit" class="btn">Place Order</button>              <h4>Your inventory</h4>
-
-          <p id="checkout-error" class="error"></p>              <div id="retailer-inventory-grid" class="grid"></div>
-
-        </form>            </section>
-
-        <h4 style="margin-top: 2rem;">Your Orders</h4>          </div>
-
-        <div id="customer-orders" class="list"></div>          <section style="margin-top:1rem;">
-
-      </section>            <h4>Your orders</h4>
-
-            <div id="retailer-orders-list"></div>
-
-      <!-- Distributor Section -->          </section>
-
-      <section id="distributor-panel" class="panel" hidden>        </div>
-
-        <h3>Distributor</h3>
-
-        <div id="distributor-orders" class="list"></div>        <div id="customer-section" class="panel" hidden>
-
-      </section>          <h3>Customer • Storefront</h3>
-
-    </section>          <div class="two-col">
-
-  </main>            <section>
-
-              <h4>Products for sale</h4>
-
-  <script src="app.js"></script>              <div id="catalog-grid" class="grid"></div>
-
-</body>            </section>
-
-</html>            <aside>
-
-              <h4>Your cart</h4>
-              <div id="cart-items"></div>
-              <form id="checkout-form" style="margin-top:0.5rem;">
-                <div class="input-group">
-                  <label for="ship-addr">Shipping address</label>
-                  <textarea id="ship-addr" name="ShippingAddress" rows="2" required></textarea>
-                </div>
-                <button class="btn primary" type="submit">Place order</button>
-                <p id="checkout-error" class="error-message" aria-live="polite"></p>
-              </form>
-            </aside>
-          </div>
-          <section style="margin-top:1rem;">
-            <h4>Your orders</h4>
-            <div id="customer-orders-list"></div>
-          </section>
-        </div>
-
-        <div id="distributor-section" class="panel" hidden>
-          <h3>Distributor • Assigned orders</h3>
-          <div id="distributor-orders-list"></div>
-        </div>
       </section>
-    </main>
 
-    <script src="app.js" defer></script>
-  </body>
+      <!-- Retailer Section -->
+      <section id="retailer-panel" class="panel" hidden>
+        <h3>Retailer</h3>
+        <h4>Available Products</h4>
+        <div id="available-products" class="list"></div>
+        <h4 style="margin-top: 2rem;">Your Inventory</h4>
+        <div id="retailer-inventory" class="list"></div>
+        <h4 style="margin-top: 2rem;">Orders</h4>
+        <div id="retailer-orders" class="list"></div>
+      </section>
+
+      <!-- Customer Section -->
+      <section id="customer-panel" class="panel" hidden>
+        <h3>Customer</h3>
+        <h4>Available Products</h4>
+        <div id="catalog" class="list"></div>
+        <h4 style="margin-top: 2rem;">Cart</h4>
+        <div id="cart" class="list"></div>
+        <form id="checkout-form">
+          <div class="form-group">
+            <label>Shipping Address</label>
+            <textarea name="ShippingAddress" rows="2" placeholder="Address" required></textarea>
+          </div>
+          <button type="submit" class="btn">Place Order</button>
+          <p id="checkout-error" class="error"></p>
+        </form>
+        <h4 style="margin-top: 2rem;">Your Orders</h4>
+        <div id="customer-orders" class="list"></div>
+      </section>
+
+      <!-- Distributor Section -->
+      <section id="distributor-panel" class="panel" hidden>
+        <h3>Distributor</h3>
+        <div id="distributor-orders" class="list"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
 </html>
