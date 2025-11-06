@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>the-Weft SCM</title>
+    <link rel="stylesheet" href="login.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="brand">
+        <img src="assets/logo.png" alt="the-Weft logo" class="brand-logo" />
+        <h1 class="brand-name">the-Weft</h1>
+      </div>
+      <nav class="site-actions">
+        <button id="logout-btn" class="btn ghost" hidden>Logout</button>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section id="auth-view" class="card auth-card">
+        <div class="two-col" style="grid-template-columns: 1fr auto; align-items: center;">
+          <div>
+            <h2 class="title" id="auth-title">Sign in</h2>
+            <p class="subtitle" id="auth-subtitle">Access your supply chain dashboard</p>
+          </div>
+          <div class="auth-switch">
+            <button id="show-signin" class="btn ghost" type="button" hidden>Sign in</button>
+            <button id="show-signup" class="btn ghost" type="button">Create account</button>
+          </div>
+        </div>
+
+        <form id="login-form" autocomplete="on">
+          <div class="input-group">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+          <div class="input-group">
+            <label for="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn primary">Sign in</button>
+          <p id="login-error" class="error-message" aria-live="polite"></p>
+        </form>
+
+        <form id="signup-form" autocomplete="on" hidden>
+          <div class="input-group">
+            <label for="signup-fullname">Full name</label>
+            <input type="text" id="signup-fullname" name="FullName" placeholder="Jane Doe" required />
+          </div>
+          <div class="input-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" name="Email" placeholder="you@example.com" required />
+          </div>
+          <div class="input-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" name="Password" placeholder="Create a password" required />
+          </div>
+          <div class="input-group">
+            <label for="signup-role">Role</label>
+            <select id="signup-role" name="Role" required>
+              <option value="Customer">Customer</option>
+              <option value="Retailer">Retailer</option>
+              <option value="Manufacturer">Manufacturer</option>
+              <option value="Distributor">Distributor</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="signup-address">Address</label>
+            <textarea id="signup-address" name="Address" rows="2" placeholder="Your address"></textarea>
+          </div>
+          <button type="submit" class="btn primary">Create account</button>
+          <p id="signup-error" class="error-message" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="dashboard-view" class="dashboard" hidden>
+        <div class="dashboard-head">
+          <div>
+            <h2 id="welcome-text">Welcome</h2>
+            <p class="muted" id="role-text"></p>
+          </div>
+        </div>
+
+        <div id="manufacturer-section" class="panel" hidden>
+          <h3>Manufacturer • Your master products</h3>
+          <form id="master-product-form" class="two-col" style="align-items:end;">
+            <div class="input-group">
+              <label for="mp-name">Product name</label>
+              <input id="mp-name" name="ProductName" placeholder="Premium Leather Jacket" required />
+            </div>
+            <div class="input-group">
+              <label for="mp-desc">Description</label>
+              <input id="mp-desc" name="Description" placeholder="Short description" />
+            </div>
+            <button class="btn primary" type="submit">Create</button>
+            <p id="mp-error" class="error-message" aria-live="polite"></p>
+          </form>
+          <div id="master-products-grid" class="grid" style="margin-top:0.5rem;"></div>
+        </div>
+
+        <div id="retailer-section" class="panel" hidden>
+          <h3>Retailer • Stock products and manage orders</h3>
+          <div class="two-col">
+            <section>
+              <h4>Browse master products</h4>
+              <div id="master-products-list" class="grid"></div>
+            </section>
+            <section>
+              <h4>Your inventory</h4>
+              <div id="retailer-inventory-grid" class="grid"></div>
+            </section>
+          </div>
+          <section style="margin-top:1rem;">
+            <h4>Your orders</h4>
+            <div id="retailer-orders-list"></div>
+          </section>
+        </div>
+
+        <div id="customer-section" class="panel" hidden>
+          <h3>Customer • Storefront</h3>
+          <div class="two-col">
+            <section>
+              <h4>Products for sale</h4>
+              <div id="catalog-grid" class="grid"></div>
+            </section>
+            <aside>
+              <h4>Your cart</h4>
+              <div id="cart-items"></div>
+              <form id="checkout-form" style="margin-top:0.5rem;">
+                <div class="input-group">
+                  <label for="ship-addr">Shipping address</label>
+                  <textarea id="ship-addr" name="ShippingAddress" rows="2" required></textarea>
+                </div>
+                <button class="btn primary" type="submit">Place order</button>
+                <p id="checkout-error" class="error-message" aria-live="polite"></p>
+              </form>
+            </aside>
+          </div>
+        </div>
+
+        <div id="distributor-section" class="panel" hidden>
+          <h3>Distributor • Assigned orders</h3>
+          <div id="distributor-orders-list"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
