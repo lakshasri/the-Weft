@@ -6,6 +6,7 @@ const {
   getMasterProducts,
   getMasterProductsByManufacturer,
   createMasterProduct,
+  getManufacturerProductAnalytics,
   // Catalog / retailer inventory
   getCatalog,
   getRetailerInventory,
@@ -32,6 +33,7 @@ router.post('/auth/login', loginUser);
 // Master products (Manufacturers)
 router.get('/products/master', getMasterProducts);
 router.get('/products/master/manufacturer/:id', getMasterProductsByManufacturer);
+router.get('/products/master/analytics/:id', getManufacturerProductAnalytics);
 router.post('/products/master', createMasterProduct);
 
 // Catalog / Retailer inventory

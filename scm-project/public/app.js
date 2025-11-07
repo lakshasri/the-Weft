@@ -18,6 +18,7 @@ const userRole = document.getElementById('user-role');
 const productForm = document.getElementById('product-form');
 const productError = document.getElementById('product-error');
 const productList = document.getElementById('product-list');
+const productAnalytics = document.getElementById('product-analytics');
 
 const availableProducts = document.getElementById('available-products');
 const retailerInventory = document.getElementById('retailer-inventory');
@@ -141,8 +142,42 @@ async function loadManufacturerData() {
     productList.innerHTML = products.length
       ? products.map(p => `<div class="list-item"><h4>${p.ProductName}</h4><p>${p.Description || 'N/A'}</p></div>`).join('')
       : '<p class="empty">No products yet.</p>';
+
+    // Load analytics
+    const resAnalytics = await fetch(`${API}/products/master/analytics/${currentUser.UserID}`);
+    const analytics = await resAnalytics.json();
+    productAnalytics.innerHTML = analytics.length
+      ? analytics.map(a => `
+          <div class="list-item analytics-card">
+            <h4>${a.ProductName}</h4>
+            <div class="analytics-grid">
+              <div class="metric">
+                <span class="label">Retailers Stocking:</span>
+                <span class="value">${a.TotalRetailers || 0}</span>
+              </div>
+              <div class="metric">
+                <span class="label">Total Stock:</span>
+                <span class="value">${a.TotalStock || 0} units</span>
+              </div>
+              <div class="metric">
+                <span class="label">Avg Price:</span>
+                <span class="value">$${a.AvgPrice ? parseFloat(a.AvgPrice).toFixed(2) : 'N/A'}</span>
+              </div>
+              <div class="metric">
+                <span class="label">Price Range:</span>
+                <span class="value">$${a.MinPrice ? parseFloat(a.MinPrice).toFixed(2) : 'N/A'} - $${a.MaxPrice ? parseFloat(a.MaxPrice).toFixed(2) : 'N/A'}</span>
+              </div>
+            </div>
+            <div class="retailers-list">
+              <span class="label">Stocked by:</span>
+              <p>${a.RetailerNames || 'Not yet stocked'}</p>
+            </div>
+          </div>
+        `).join('')
+      : '<p class="empty">No products or distribution data yet.</p>';
   } catch (e) {
     productList.innerHTML = '<p class="empty">Error loading.</p>';
+    productAnalytics.innerHTML = '<p class="empty">Error loading analytics.</p>';
   }
 }
 
@@ -267,7 +302,9 @@ async function loadCustomerData() {
       ? prods.map(p => `<div class="list-item">
           <h4>${p.ProductName}</h4>
           <p>$${parseFloat(p.Price).toFixed(2)} | Stock: ${p.Stock} - ${p.RetailerName}</p>
-          <button class="btn" onclick="addToCart('${p.RetailerProductID}', '${p.RetailerID}', '${p.ProductName}', ${parseFloat(p.Price)})">Add</button>
+          <button class="btn" onclick="addToCart('${p.RetailerProductID}', '${p.RetailerID}', '${p.ProductName}', ${parseFloat(p.Price)}, ${p.Stock})" ${p.Stock <= 0 ? 'disabled' : ''}>
+            ${p.Stock <= 0 ? 'Out of Stock' : 'Add'}
+          </button>
         </div>`).join('')
       : '<p class="empty">No products.</p>';
 
@@ -286,10 +323,17 @@ async function loadCustomerData() {
   }
 }
 
-function addToCart(rpid, rid, name, price) {
+function addToCart(rpid, rid, name, price, maxStock) {
   const existing = cart.find(i => i.RetailerProductID === rpid);
+  const currentQty = existing ? existing.Quantity : 0;
+  
+  if (currentQty >= maxStock) {
+    alert(`Cannot add more. Maximum stock available: ${maxStock}`);
+    return;
+  }
+  
   if (existing) existing.Quantity += 1;
-  else cart.push({ RetailerProductID: rpid, RetailerID: rid, Quantity: 1, name, price });
+  else cart.push({ RetailerProductID: rpid, RetailerID: rid, Quantity: 1, name, price, maxStock });
   renderCart();
 }
 
@@ -300,10 +344,35 @@ function renderCart() {
   }
   cartDiv.innerHTML = cart.map(i => `
     <div class="cart-item">
-      <span>${i.name} x${i.Quantity} ($${(i.price * i.Quantity).toFixed(2)})</span>
+      <div>
+        <span>${i.name}</span>
+        <div style="margin-top: 8px; font-size: 0.9em;">
+          <input type="number" min="1" max="${i.maxStock}" value="${i.Quantity}" 
+            onchange="updateCartQuantity('${i.RetailerProductID}', this.value, ${i.maxStock})"
+            style="width: 60px; padding: 4px;">
+          <span> / ${i.maxStock} available</span>
+        </div>
+        <p style="margin-top: 4px; font-weight: bold;">$${(i.price * i.Quantity).toFixed(2)}</p>
+      </div>
       <button class="btn" onclick="removeFromCart('${i.RetailerProductID}')">Remove</button>
     </div>
   `).join('');
+}
+
+function updateCartQuantity(rpid, newQty, maxStock) {
+  newQty = parseInt(newQty);
+  if (newQty < 1) {
+    removeFromCart(rpid);
+    return;
+  }
+  if (newQty > maxStock) {
+    alert(`Cannot exceed available stock: ${maxStock}`);
+    renderCart();
+    return;
+  }
+  const item = cart.find(i => i.RetailerProductID === rpid);
+  if (item) item.Quantity = newQty;
+  renderCart();
 }
 
 function removeFromCart(rpid) {

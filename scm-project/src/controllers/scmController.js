@@ -92,6 +92,35 @@ exports.createMasterProduct = async (req, res) => {
   }
 };
 
+exports.getManufacturerProductAnalytics = async (req, res) => {
+  const { id } = req.params; // manufacturer id
+  try {
+    const [analytics] = await pool.execute(
+      `SELECT 
+        p.ProductID,
+        p.ProductName,
+        p.Description,
+        COUNT(DISTINCT rp.RetailerID) AS TotalRetailers,
+        SUM(rp.Stock) AS TotalStock,
+        AVG(rp.Price) AS AvgPrice,
+        MIN(rp.Price) AS MinPrice,
+        MAX(rp.Price) AS MaxPrice,
+        GROUP_CONCAT(DISTINCT u.FullName ORDER BY u.FullName SEPARATOR ', ') AS RetailerNames
+       FROM Products p
+       LEFT JOIN RetailerProducts rp ON rp.ProductID = p.ProductID
+       LEFT JOIN Users u ON u.UserID = rp.RetailerID
+       WHERE p.ManufacturerID = ?
+       GROUP BY p.ProductID, p.ProductName, p.Description
+       ORDER BY p.ProductName ASC`,
+      [id]
+    );
+    res.json(analytics);
+  } catch (e) {
+    console.error('getManufacturerProductAnalytics error:', e);
+    res.status(500).json({ message: 'Failed to retrieve product analytics.' });
+  }
+};
+
 /* =========================
    Retailer Inventory & Catalog
 ========================= */

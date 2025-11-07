@@ -237,6 +237,59 @@ button:hover {
   font-size: 0.9rem;
 }
 
+.analytics-card {
+  border: 2px solid black;
+  padding: 1rem;
+  background: #f9f9f9;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid black;
+}
+
+.metric .label {
+  font-weight: bold;
+  font-size: 0.85rem;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.metric .value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: black;
+}
+
+.retailers-list {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: white;
+  border: 1px solid black;
+}
+
+.retailers-list .label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.retailers-list p {
+  margin: 0;
+  color: #333;
+  font-size: 0.95rem;
+}
+
 .empty {
   color: #999;
   font-style: italic;
@@ -254,5 +307,9 @@ button:hover {
 
   .card {
     padding: 1rem;
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
   }
 }
