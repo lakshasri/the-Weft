@@ -33,11 +33,14 @@ const customerOrders = document.getElementById('customer-orders');
 const distributorOrders = document.getElementById('distributor-orders');
 
 document.addEventListener('DOMContentLoaded', () => {
-  const stored = localStorage.getItem('user');
-  if (stored) {
-    currentUser = JSON.parse(stored);
-    showDashboard();
-  }
+  // Clear any existing user data to force login
+  localStorage.removeItem('user');
+  currentUser = null;
+  
+  // Always show login form initially
+  authView.hidden = false;
+  dashboardView.hidden = true;
+  logoutBtn.hidden = true;
 
   loginForm.addEventListener('submit', handleLogin);
   signupForm.addEventListener('submit', handleSignup);
@@ -60,12 +63,18 @@ async function handleLogin(e) {
         Password: fd.get('password'),
       }),
     });
-    if (!res.ok) throw new Error('Login failed');
+    
     const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || 'Login failed');
+    }
+    
     currentUser = data.user;
     localStorage.setItem('user', JSON.stringify(currentUser));
     showDashboard();
   } catch (e) {
+    console.error('Login error:', e);
     loginError.textContent = e.message;
   }
 }
@@ -86,12 +95,18 @@ async function handleSignup(e) {
         Address: fd.get('Address'),
       }),
     });
-    if (!res.ok) throw new Error('Signup failed');
+    
     const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || 'Signup failed');
+    }
+    
     currentUser = data.user;
     localStorage.setItem('user', JSON.stringify(currentUser));
     showDashboard();
   } catch (e) {
+    console.error('Signup error:', e);
     signupError.textContent = e.message;
   }
 }
@@ -123,16 +138,27 @@ function showDashboard() {
   userName.textContent = `Welcome, ${currentUser.FullName}`;
   userRole.textContent = `Role: ${currentUser.Role}`;
 
-  const role = currentUser.Role;
-  document.getElementById('manufacturer-panel').hidden = role !== 'Manufacturer';
-  document.getElementById('retailer-panel').hidden = role !== 'Retailer';
-  document.getElementById('customer-panel').hidden = role !== 'Customer';
-  document.getElementById('distributor-panel').hidden = role !== 'Distributor';
+  // Hide all panels first
+  document.getElementById('manufacturer-panel').hidden = true;
+  document.getElementById('retailer-panel').hidden = true;
+  document.getElementById('customer-panel').hidden = true;
+  document.getElementById('distributor-panel').hidden = true;
 
-  if (role === 'Manufacturer') loadManufacturerData();
-  else if (role === 'Retailer') loadRetailerData();
-  else if (role === 'Customer') loadCustomerData();
-  else if (role === 'Distributor') loadDistributorData();
+  // Show only the relevant panel
+  const role = currentUser.Role;
+  if (role === 'Manufacturer') {
+    document.getElementById('manufacturer-panel').hidden = false;
+    loadManufacturerData();
+  } else if (role === 'Retailer') {
+    document.getElementById('retailer-panel').hidden = false;
+    loadRetailerData();
+  } else if (role === 'Customer') {
+    document.getElementById('customer-panel').hidden = false;
+    loadCustomerData();
+  } else if (role === 'Distributor') {
+    document.getElementById('distributor-panel').hidden = false;
+    loadDistributorData();
+  }
 }
 
 async function loadManufacturerData() {
@@ -246,9 +272,35 @@ async function loadRetailerData() {
 
     const res2 = await fetch(`${API}/retailer/${currentUser.UserID}/inventory`);
     const inv = await res2.json();
-    retailerInventory.innerHTML = inv.length
-      ? inv.map(i => `<div class="list-item"><h4>${i.ProductName}</h4><p>$${parseFloat(i.Price).toFixed(2)} | Stock: ${i.Stock}</p></div>`).join('')
-      : '<p class="empty">Empty.</p>';
+    
+    // Get stock value using database function
+    const stockValueRes = await fetch(`${API}/retailer/${currentUser.UserID}/stock-value`);
+    const stockValueData = await stockValueRes.json();
+    
+    // Get low stock alerts
+    const lowStockRes = await fetch(`${API}/retailer/${currentUser.UserID}/low-stock`);
+    const lowStockData = await lowStockRes.json();
+    
+    retailerInventory.innerHTML = `
+      <div class="dashboard-stats" style="margin-bottom: 1rem;">
+        <div class="stat-card" style="background: #4CAF50; color: white; padding: 1rem; border-radius: 5px; margin-bottom: 0.5rem;">
+          <h4>Total Stock Value: $${parseFloat(stockValueData.stockValue || 0).toFixed(2)}</h4>
+        </div>
+        ${lowStockData.length > 0 ? `
+          <div class="stat-card" style="background: #ff9800; color: white; padding: 1rem; border-radius: 5px; margin-bottom: 0.5rem;">
+            <h4>⚠️ Low Stock Alert: ${lowStockData.length} products need restocking</h4>
+            <button class="btn" onclick="showLowStockDetails()" style="background: rgba(255,255,255,0.2); border: 1px solid white; margin-top: 0.5rem;">View Details</button>
+          </div>
+        ` : ''}
+      </div>
+      ${inv.length
+        ? inv.map(i => `<div class="list-item">
+            <h4>${i.ProductName}</h4>
+            <p>$${parseFloat(i.Price).toFixed(2)} | Stock: ${i.Stock}</p>
+          </div>`).join('')
+        : '<p class="empty">Empty.</p>'
+      }
+    `;
 
     const res3 = await fetch(`${API}/orders/retailer/${currentUser.UserID}`);
     const orders = await res3.json();
@@ -459,4 +511,120 @@ function groupOrdersByID(orders) {
     });
   }
   return Object.values(map);
+}
+
+// Advanced Database Features
+
+async function showLowStockDetails() {
+  try {
+    const res = await fetch(`${API}/retailer/${currentUser.UserID}/low-stock`);
+    const lowStockData = await res.json();
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; 
+      z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+      <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 600px; max-height: 80%; overflow-y: auto;">
+        <h2 style="color: #ff9800;">⚠️ Low Stock Products</h2>
+        <div style="margin: 1rem 0;">
+          ${lowStockData.map(item => `
+            <div style="border: 1px solid #ddd; padding: 1rem; margin: 0.5rem 0; border-radius: 5px;">
+              <h4>${item.ProductName}</h4>
+              <p><strong>Current Stock:</strong> ${item.CurrentStock}</p>
+              <p><strong>Minimum Required:</strong> ${item.MinStockLevel}</p>
+              <p><strong>Suggested Restock:</strong> ${item.RestockNeeded} units</p>
+            </div>
+          `).join('')}
+        </div>
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+          <button class="btn" onclick="showAuditTrail()" style="background: #2196F3;">View Audit Trail</button>
+          <button class="btn" onclick="this.closest('div[style*=fixed]').remove()">Close</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+  } catch (e) {
+    alert('Failed to load low stock details: ' + e.message);
+  }
+}
+
+async function showAuditTrail() {
+  try {
+    const res = await fetch(`${API}/retailer/${currentUser.UserID}/audit-trail`);
+    const auditData = await res.json();
+    
+    // Close existing modal if any
+    const existingModal = document.querySelector('div[style*="position: fixed"]');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; 
+      z-index: 1000;
+    `;
+    
+    modal.innerHTML = `
+      <div style="background: white; padding: 2rem; border-radius: 10px; max-width: 800px; max-height: 80%; overflow-y: auto;">
+        <h2 style="color: #2196F3;">📊 Inventory Audit Trail</h2>
+        <div style="margin: 1rem 0;">
+          ${auditData.length > 0 ? auditData.map(audit => `
+            <div style="border: 1px solid #ddd; padding: 1rem; margin: 0.5rem 0; border-radius: 5px;">
+              <h4>${audit.ProductName}</h4>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <p><strong>Stock Change:</strong> ${audit.OldStock} → ${audit.NewStock} (${audit.StockChange > 0 ? '+' : ''}${audit.StockChange})</p>
+                <p><strong>Reason:</strong> ${audit.ChangeReason}</p>
+                <p><strong>Date:</strong> ${new Date(audit.ChangeDate).toLocaleDateString()}</p>
+                ${audit.OrderID ? `<p><strong>Order ID:</strong> #${audit.OrderID}</p>` : ''}
+              </div>
+            </div>
+          `).join('') : '<p class="empty">No audit trail data available.</p>'}
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn" onclick="this.closest('div[style*=fixed]').remove()">Close</button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+  } catch (e) {
+    alert('Failed to load audit trail: ' + e.message);
+  }
+}
+
+// Enhanced order creation using validated stored procedure
+async function createValidatedOrder(customerId, retailerId, shippingAddress, productId, quantity) {
+  try {
+    const res = await fetch(`${API}/orders/validated`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId,
+        retailerId, 
+        shippingAddress,
+        productId,
+        quantity
+      }),
+    });
+    
+    const result = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(result.message || 'Order creation failed');
+    }
+    
+    alert(`✅ ${result.message}`);
+    return result.orderId;
+    
+  } catch (e) {
+    alert(`❌ Order Failed: ${e.message}`);
+    throw e;
+  }
 }

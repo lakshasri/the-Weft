@@ -22,6 +22,11 @@ const {
   getOrdersByDistributor,
   assignOrderDistributor,
   updateOrderStatus,
+  // Advanced Database Features
+  getRetailerStockValue,
+  getLowStockProducts,
+  getInventoryAuditTrail,
+  createValidatedOrder,
 } = require('../controllers/scmController');
 
 const router = express.Router();
@@ -53,5 +58,11 @@ router.get('/orders/retailer/:id', getOrdersByRetailer);
 router.get('/orders/distributor/:id', getOrdersByDistributor);
 router.patch('/orders/:orderId/assign', assignOrderDistributor);
 router.patch('/orders/:orderId/status', updateOrderStatus);
+
+// Advanced Database Features
+router.get('/retailer/:id/stock-value', getRetailerStockValue);
+router.get('/retailer/:id/low-stock', getLowStockProducts);
+router.get('/retailer/:id/audit-trail', getInventoryAuditTrail);
+router.post('/orders/validated', createValidatedOrder);
 
 module.exports = router;

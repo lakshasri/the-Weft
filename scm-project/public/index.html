@@ -107,7 +107,13 @@
 
       <!-- Retailer Section -->
       <section id="retailer-panel" class="panel" hidden>
-        <h3>Retailer</h3>
+        <h3>Retailer Dashboard</h3>
+        
+        <div style="margin-bottom: 1rem;">
+          <button class="btn" onclick="showAuditTrail()" style="background: #2196F3; margin-right: 0.5rem;">📊 View Audit Trail</button>
+          <button class="btn" onclick="loadRetailerData()" style="background: #4CAF50;">🔄 Refresh Data</button>
+        </div>
+        
         <h4>Available Products</h4>
         <div id="available-products" class="list"></div>
         <h4 style="margin-top: 2rem;">Your Inventory</h4>

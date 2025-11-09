@@ -1,143 +1,7 @@
--- DDL Script for SCM Project with Separate Entity Tables
-
--- Ensure legacy FKs don't block drops when upgrading schema
-SET FOREIGN_KEY_CHECKS = 0;
-
--- Drop tables if they already exist
-DROP TABLE IF EXISTS OrderDetails; -- legacy table from previous schema
-DROP TABLE IF EXISTS OrderItems;
-DROP TABLE IF EXISTS Orders;
-DROP TABLE IF EXISTS RetailerProducts;
-DROP TABLE IF EXISTS Products;
-DROP TABLE IF EXISTS Distributors;
-DROP TABLE IF EXISTS Retailers;
-DROP TABLE IF EXISTS Manufacturers;
-DROP TABLE IF EXISTS Customers;
-DROP TABLE IF EXISTS Users;
-SET FOREIGN_KEY_CHECKS = 1;
-
--- Base Users table for authentication
-CREATE TABLE Users (
-  UserID INT AUTO_INCREMENT PRIMARY KEY,
-  Email VARCHAR(255) NOT NULL UNIQUE,
-  Password VARCHAR(255) NOT NULL,
-  Role ENUM('Customer', 'Manufacturer', 'Retailer', 'Distributor') NOT NULL,
-  CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  IsActive BOOLEAN NOT NULL DEFAULT TRUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Customer Entity
-CREATE TABLE Customers (
-  CustomerID INT AUTO_INCREMENT PRIMARY KEY,
-  UserID INT NOT NULL UNIQUE,
-  FullName VARCHAR(100) NOT NULL,
-  Address TEXT,
-  Phone VARCHAR(20),
-  DateOfBirth DATE,
-  CONSTRAINT fk_customers_user FOREIGN KEY (UserID) 
-    REFERENCES Users(UserID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Manufacturer Entity
-CREATE TABLE Manufacturers (
-  ManufacturerID INT AUTO_INCREMENT PRIMARY KEY,
-  UserID INT NOT NULL UNIQUE,
-  CompanyName VARCHAR(100) NOT NULL,
-  Address TEXT,
-  Phone VARCHAR(20),
-  Website VARCHAR(255),
-  LicenseNumber VARCHAR(50),
-  EstablishedYear YEAR,
-  CONSTRAINT fk_manufacturers_user FOREIGN KEY (UserID) 
-    REFERENCES Users(UserID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Retailer Entity
-CREATE TABLE Retailers (
-  RetailerID INT AUTO_INCREMENT PRIMARY KEY,
-  UserID INT NOT NULL UNIQUE,
-  BusinessName VARCHAR(100) NOT NULL,
-  Address TEXT,
-  Phone VARCHAR(20),
-  Website VARCHAR(255),
-  TaxID VARCHAR(50),
-  BusinessLicense VARCHAR(50),
-  CONSTRAINT fk_retailers_user FOREIGN KEY (UserID) 
-    REFERENCES Users(UserID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Distributor Entity
-CREATE TABLE Distributors (
-  DistributorID INT AUTO_INCREMENT PRIMARY KEY,
-  UserID INT NOT NULL UNIQUE,
-  CompanyName VARCHAR(100) NOT NULL,
-  Address TEXT,
-  Phone VARCHAR(20),
-  ServiceAreas TEXT,
-  VehicleCapacity INT,
-  OperatingHours VARCHAR(50),
-  CONSTRAINT fk_distributors_user FOREIGN KEY (UserID) 
-    REFERENCES Users(UserID) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Master products defined by Manufacturers
-CREATE TABLE Products (
-  ProductID INT AUTO_INCREMENT PRIMARY KEY,
-  ProductName VARCHAR(255) NOT NULL,
-  Description TEXT,
-  ManufacturerID INT NOT NULL,
-  Category VARCHAR(100),
-  SKU VARCHAR(50) UNIQUE,
-  CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_products_manufacturer FOREIGN KEY (ManufacturerID)
-    REFERENCES Manufacturers(ManufacturerID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Retailer decides to stock a master product with its own price and stock
-CREATE TABLE RetailerProducts (
-  RetailerProductID INT AUTO_INCREMENT PRIMARY KEY,
-  RetailerID INT NOT NULL,
-  ProductID INT NOT NULL,
-  Price DECIMAL(10, 2) NOT NULL,
-  Stock INT NOT NULL DEFAULT 0,
-  MinStockLevel INT DEFAULT 10,
-  AddedDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_retailer_product (RetailerID, ProductID),
-  CONSTRAINT fk_rp_retailer FOREIGN KEY (RetailerID) REFERENCES Retailers(RetailerID),
-  CONSTRAINT fk_rp_product FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Orders are placed by Customers with specific Retailers, and may be assigned to Distributors
-CREATE TABLE Orders (
-  OrderID INT AUTO_INCREMENT PRIMARY KEY,
-  CustomerID INT NOT NULL,
-  RetailerID INT NOT NULL,
-  DistributorID INT NULL,
-  OrderDate DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  ShippingAddress VARCHAR(255) NOT NULL,
-  Status ENUM('Pending', 'Assigned', 'Shipped', 'Delivered', 'Cancelled') NOT NULL DEFAULT 'Pending',
-  TotalAmount DECIMAL(10, 2),
-  EstimatedDelivery DATE,
-  CONSTRAINT fk_orders_customer FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
-  CONSTRAINT fk_orders_retailer FOREIGN KEY (RetailerID) REFERENCES Retailers(RetailerID),
-  CONSTRAINT fk_orders_distributor FOREIGN KEY (DistributorID) REFERENCES Distributors(DistributorID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Line items: link to RetailerProducts since customers buy from retailers
-CREATE TABLE OrderItems (
-  OrderItemID INT AUTO_INCREMENT PRIMARY KEY,
-  OrderID INT NOT NULL,
-  RetailerProductID INT NOT NULL,
-  Quantity INT NOT NULL,
-  UnitPriceAtPurchase DECIMAL(10, 2) NOT NULL,
-  CONSTRAINT fk_orderitems_order FOREIGN KEY (OrderID)
-    REFERENCES Orders(OrderID) ON DELETE CASCADE,
-  CONSTRAINT fk_orderitems_rp FOREIGN KEY (RetailerProductID)
-    REFERENCES RetailerProducts(RetailerProductID)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- Functions, Procedures, and Triggers for SCM Project
 
 -- ======================================
--- FUNCTIONS, PROCEDURES, AND TRIGGERS
+-- FUNCTIONS
 -- ======================================
 
 -- Function 1: Calculate Order Total
@@ -175,6 +39,10 @@ BEGIN
     RETURN stock_value;
 END //
 DELIMITER ;
+
+-- ======================================
+-- STORED PROCEDURES
+-- ======================================
 
 -- Procedure 1: Check Low Stock Products
 DELIMITER //
@@ -219,12 +87,13 @@ BEGIN
             product_name, 
             current_stock, 
             min_stock, 
-            min_stock - current_stock + 10
+            min_stock - current_stock + 10  -- Suggest restock quantity
         );
     END LOOP;
     
     CLOSE stock_cursor;
     
+    -- Return the report
     SELECT * FROM LowStockReport;
     
 END //
@@ -254,11 +123,13 @@ BEGIN
     
     START TRANSACTION;
     
+    -- Check if retailer stocks this product
     SELECT RetailerProductID, Stock, Price 
     INTO retailer_product_id, current_stock, product_price
     FROM RetailerProducts 
     WHERE RetailerID = retailer_id AND ProductID = product_id;
     
+    -- Validate stock availability
     IF retailer_product_id = 0 THEN
         SET result_message = 'Error: Product not available from this retailer';
         SET order_id = -1;
@@ -268,14 +139,17 @@ BEGIN
         SET order_id = -1;
         ROLLBACK;
     ELSE
+        -- Create order
         INSERT INTO Orders (CustomerID, RetailerID, ShippingAddress, Status, TotalAmount)
         VALUES (customer_id, retailer_id, shipping_address, 'Pending', quantity * product_price);
         
         SET order_id = LAST_INSERT_ID();
         
+        -- Add order item
         INSERT INTO OrderItems (OrderID, RetailerProductID, Quantity, UnitPriceAtPurchase)
         VALUES (order_id, retailer_product_id, quantity, product_price);
         
+        -- Update inventory
         UPDATE RetailerProducts 
         SET Stock = Stock - quantity 
         WHERE RetailerProductID = retailer_product_id;
@@ -286,6 +160,10 @@ BEGIN
     
 END //
 DELIMITER ;
+
+-- ======================================
+-- AUDIT TABLE FOR TRIGGERS
+-- ======================================
 
 -- Create audit table for inventory changes
 CREATE TABLE InventoryAudit (
@@ -303,6 +181,10 @@ CREATE TABLE InventoryAudit (
     INDEX idx_retailer_date (RetailerID, ChangeDate),
     INDEX idx_product_date (ProductID, ChangeDate)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ======================================
+-- TRIGGERS
+-- ======================================
 
 -- Trigger 1: Auto-Update Order Total on Item Changes
 DELIMITER //
@@ -342,11 +224,13 @@ FOR EACH ROW
 BEGIN
     DECLARE change_reason ENUM('ORDER', 'RESTOCK', 'ADJUSTMENT', 'RETURN') DEFAULT 'ADJUSTMENT';
     
+    -- Only log if stock actually changed
     IF OLD.Stock != NEW.Stock THEN
+        -- Determine reason based on stock change pattern
         IF NEW.Stock < OLD.Stock THEN
-            SET change_reason = 'ORDER';
+            SET change_reason = 'ORDER';  -- Stock decreased, likely a sale
         ELSEIF NEW.Stock > OLD.Stock THEN
-            SET change_reason = 'RESTOCK';
+            SET change_reason = 'RESTOCK';  -- Stock increased, likely restocking
         END IF;
         
         INSERT INTO InventoryAudit (
