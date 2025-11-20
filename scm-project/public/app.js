@@ -154,8 +154,8 @@ function showDashboard() {
     // Redirect to the new retailer dashboard
     window.location.href = 'retailer-dashboard.html';
   } else if (role === 'Customer') {
-    document.getElementById('customer-panel').hidden = false;
-    loadCustomerData();
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    window.location.href = 'customer-dashboard.html';
   } else if (role === 'Distributor') {
     // Store user in localStorage for the distributor dashboard
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -165,24 +165,76 @@ function showDashboard() {
 }
 
 async function loadManufacturerData() {
-  showManufacturerTab('overview');
+  await loadManufacturerStats();
+  showManufacturerTab('products');
+}
+
+async function loadManufacturerStats() {
+  try {
+    const [productsRes, inventoryRes, ordersRes] = await Promise.all([
+      fetch(`${API}/products/master/manufacturer/${currentUser.UserID}`),
+      fetch(`${API}/manufacturer/${currentUser.UserID}/inventory`),
+      fetch(`${API}/manufacturer/${currentUser.UserID}/orders`)
+    ]);
+    
+    const [products, inventory, orders] = await Promise.all([
+      productsRes.json(),
+      inventoryRes.json(),
+      ordersRes.json()
+    ]);
+    
+    const totalProducts = Array.isArray(products) ? products.length : 0;
+    const totalInventory = Array.isArray(inventory)
+      ? inventory.reduce((sum, item) => sum + Number(item.QuantityAvailable || 0), 0)
+      : 0;
+    const pendingOrders = Array.isArray(orders)
+      ? orders.filter(order => order.Status === 'Pending').length
+      : 0;
+    const totalRevenue = Array.isArray(orders)
+      ? orders.reduce((sum, order) => sum + Number(order.TotalAmount || 0), 0)
+      : 0;
+    
+    const statsDiv = document.getElementById('manufacturer-stats');
+    if (statsDiv) {
+      statsDiv.innerHTML = `
+        <div class="stat-card">
+          <h3>Products</h3>
+          <div class="stat-value">${totalProducts}</div>
+        </div>
+        <div class="stat-card">
+          <h3>Units Available</h3>
+          <div class="stat-value">${totalInventory}</div>
+        </div>
+        <div class="stat-card">
+          <h3>Pending Orders</h3>
+          <div class="stat-value">${pendingOrders}</div>
+        </div>
+        <div class="stat-card">
+          <h3>Total Revenue</h3>
+          <div class="stat-value">$${totalRevenue.toFixed(0)}</div>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('Failed to load manufacturer stats:', error);
+    const statsDiv = document.getElementById('manufacturer-stats');
+    if (statsDiv) {
+      statsDiv.innerHTML = '<p class="error">Failed to load stats.</p>';
+    }
+  }
 }
 
 // Manufacturer Tab Navigation
 function showManufacturerTab(tabName) {
-  // Update tab buttons
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelector(`.tab-btn[onclick*="${tabName}"]`).classList.add('active');
+  document.querySelectorAll('#manufacturer-panel .manufacturer-tab').forEach(btn => btn.classList.remove('active'));
+  const activeBtn = document.querySelector(`#manufacturer-panel .manufacturer-tab[onclick*="${tabName}"]`);
+  if (activeBtn) activeBtn.classList.add('active');
   
-  // Update tab content
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-  document.getElementById(`tab-${tabName}`).classList.add('active');
+  document.querySelectorAll('#manufacturer-panel .tab-content').forEach(content => content.classList.remove('active'));
+  const contentEl = document.getElementById(`tab-${tabName}`);
+  if (contentEl) contentEl.classList.add('active');
   
-  // Load data for the selected tab
   switch(tabName) {
-    case 'overview':
-      loadManufacturerOverview();
-      break;
     case 'products':
       loadManufacturerProducts();
       break;
@@ -195,72 +247,6 @@ function showManufacturerTab(tabName) {
   }
 }
 
-// Load Overview Tab
-async function loadManufacturerOverview() {
-  try {
-    // Fetch orders to calculate overview stats
-    const ordersRes = await fetch(`${API}/manufacturer/${currentUser.UserID}/orders`);
-    const allOrders = await ordersRes.json();
-    
-    // Calculate overview statistics
-    const totalOrders = allOrders.length;
-    const totalRevenue = allOrders.reduce((sum, o) => sum + parseFloat(o.TotalAmount || 0), 0);
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const pendingOrders = allOrders.filter(o => o.Status === 'Pending').length;
-    
-    // Display overview cards
-    const overviewDiv = document.getElementById('sales-overview');
-    overviewDiv.innerHTML = `
-      <div class="overview-card">
-        <div class="card-label">Total Orders</div>
-        <div class="card-value">${totalOrders}</div>
-      </div>
-      <div class="overview-card">
-        <div class="card-label">Total Revenue</div>
-        <div class="card-value">$${totalRevenue.toFixed(2)}</div>
-      </div>
-      <div class="overview-card">
-        <div class="card-label">Avg Order Value</div>
-        <div class="card-value">$${avgOrderValue.toFixed(2)}</div>
-      </div>
-      <div class="overview-card">
-        <div class="card-label">Pending Orders</div>
-        <div class="card-value" style="color: #FFC107;">${pendingOrders}</div>
-      </div>
-    `;
-    
-    // Display recent orders preview (pending orders)
-    const pendingOrdersList = allOrders.filter(o => o.Status === 'Pending');
-    const recentOrdersDiv = document.getElementById('recent-orders-preview');
-    recentOrdersDiv.innerHTML = pendingOrdersList.slice(0, 3).length
-      ? pendingOrdersList.slice(0, 3).map(o => `
-          <div class="list-item">
-            <strong>Order #${o.OrderID}</strong> from ${o.DistributorName}<br>
-            <small>$${parseFloat(o.TotalAmount).toFixed(2)} | ${o.ItemCount} items</small>
-          </div>
-        `).join('')
-      : '<p class="empty">No pending orders</p>';
-    
-    // Fetch inventory to show top products
-    const inventoryRes = await fetch(`${API}/manufacturer/${currentUser.UserID}/inventory`);
-    const inventory = await inventoryRes.json();
-    
-    const topProductsDiv = document.getElementById('top-products-preview');
-    topProductsDiv.innerHTML = inventory.slice(0, 3).length
-      ? inventory.slice(0, 3).map(p => `
-          <div class="list-item">
-            <strong>${p.ProductName}</strong><br>
-            <small>${p.QuantityProduced || 0} produced | ${p.QuantityAvailable || 0} available</small>
-          </div>
-        `).join('')
-      : '<p class="empty">No products yet</p>';
-      
-  } catch (e) {
-    console.error('Error loading overview:', e);
-    document.getElementById('sales-overview').innerHTML = '<p class="error">Failed to load overview. Please try again.</p>';
-  }
-}
-
 // Load Products Tab
 async function loadManufacturerProducts() {
   try {
@@ -269,44 +255,38 @@ async function loadManufacturerProducts() {
     
     const productListDiv = document.getElementById('product-list');
     productListDiv.innerHTML = products.length
-      ? products.map(p => `
-          <div class="product-card">
-            <div class="product-header">
-              <div>
-                <h4 style="margin: 0 0 0.5rem 0;">${p.ProductName}</h4>
-                <p style="margin: 0; color: #666;">${p.Description || 'No description'}</p>
-              </div>
-              <span class="product-status ${p.Status === 'Active' ? '' : 'inactive'}">${p.Status}</span>
-            </div>
-            
-            <div class="product-details">
-              <div class="detail-item">
-                <span class="detail-label">Wholesale Price</span>
-                <span class="detail-value">$${p.ManufacturerPrice ? parseFloat(p.ManufacturerPrice).toFixed(2) : 'Not Set'}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Min Order Qty</span>
-                <span class="detail-value">${p.MinOrderQuantity || 'Not Set'}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Production Capacity</span>
-                <span class="detail-value">${p.ProductionCapacity || 'Not Set'} units</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Lead Time</span>
-                <span class="detail-value">${p.LeadTimeDays || 'Not Set'} days</span>
-              </div>
-            </div>
-            
-            <div class="product-actions">
-              <button class="btn btn-secondary" onclick="editProduct(${p.ProductID})">✏️ Edit</button>
-              <button class="btn btn-secondary" onclick="updateProductPrice(${p.ProductID}, ${p.ManufacturerPrice || 0})">💰 Update Price</button>
-              <button class="btn btn-warning" onclick="toggleProductStatus(${p.ProductID}, '${p.Status}')">
-                ${p.Status === 'Active' ? '🔒 Deactivate' : '✅ Activate'}
-              </button>
-            </div>
-          </div>
-        `).join('')
+      ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Wholesale Price</th>
+              <th>Min Order</th>
+              <th>Capacity</th>
+              <th>Lead Time</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${products.map(p => `
+              <tr>
+                <td>
+                  <strong>${p.ProductName}</strong><br>
+                  <small>${p.Description || 'No description'}</small>
+                </td>
+                <td>$${p.ManufacturerPrice ? parseFloat(p.ManufacturerPrice).toFixed(2) : 'Not Set'}</td>
+                <td>${p.MinOrderQuantity || 'Not Set'}</td>
+                <td>${p.ProductionCapacity || 'Not Set'} units</td>
+                <td>${p.LeadTimeDays || 'Not Set'} days</td>
+                <td>
+                  <button class="btn btn-secondary" onclick="editProduct(${p.ProductID})">Edit</button>
+                  <button class="btn btn-secondary" onclick="updateProductPrice(${p.ProductID}, ${p.ManufacturerPrice || 0})">Update Price</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `
       : '<p class="empty">No products yet. Create your first product!</p>';
       
   } catch (e) {
@@ -323,43 +303,39 @@ async function loadManufacturerInventory() {
     
     const inventoryListDiv = document.getElementById('inventory-list');
     inventoryListDiv.innerHTML = inventory.length
-      ? inventory.map(item => `
-          <div class="inventory-card">
-            <h4 style="margin: 0 0 1rem 0;">${item.ProductName}</h4>
-            
-            <div class="inventory-status">
-              <div class="inventory-metric">
-                <span class="value" style="color: #4CAF50;">${item.QuantityAvailable || 0}</span>
-                <span class="label">Available</span>
-              </div>
-              <div class="inventory-metric">
-                <span class="value" style="color: #FFC107;">${item.QuantityReserved || 0}</span>
-                <span class="label">Reserved</span>
-              </div>
-              <div class="inventory-metric">
-                <span class="value">${item.QuantityProduced || 0}</span>
-                <span class="label">Total Produced</span>
-              </div>
-              <div class="inventory-metric">
-                <span class="value">$${parseFloat(item.ProductionCost || 0).toFixed(2)}</span>
-                <span class="label">Production Cost</span>
-              </div>
-            </div>
-            
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-              <p style="margin: 0 0 0.5rem 0;"><strong>Price:</strong> $${parseFloat(item.ManufacturerPrice || 0).toFixed(2)}</p>
-              <p style="margin: 0 0 0.5rem 0;"><strong>Min Order:</strong> ${item.MinOrderQuantity || 0} units</p>
-              <p style="margin: 0 0 0.5rem 0;"><strong>Capacity:</strong> ${item.ProductionCapacity || 0} units</p>
-              <p style="margin: 0;"><strong>Last Restocked:</strong> ${item.LastRestocked ? new Date(item.LastRestocked).toLocaleString() : 'Never'}</p>
-            </div>
-            
-            <div style="margin-top: 1rem;">
-              <button class="btn btn-success" onclick="addProduction(${item.ProductID}, '${item.ProductName}')">
-                ➕ Add Production
-              </button>
-            </div>
-          </div>
-        `).join('')
+      ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Available</th>
+              <th>Reserved</th>
+              <th>Produced</th>
+              <th>Cost</th>
+              <th>Price</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${inventory.map(item => `
+              <tr>
+                <td>
+                  <strong>${item.ProductName}</strong><br>
+                  <small>Min Order: ${item.MinOrderQuantity || 0} | Capacity: ${item.ProductionCapacity || 0}</small>
+                </td>
+                <td>${item.QuantityAvailable || 0}</td>
+                <td>${item.QuantityReserved || 0}</td>
+                <td>${item.QuantityProduced || 0}</td>
+                <td>$${parseFloat(item.ProductionCost || 0).toFixed(2)}</td>
+                <td>$${parseFloat(item.ManufacturerPrice || 0).toFixed(2)}</td>
+                <td>
+                  <button class="btn btn-success" onclick="addProduction(${item.ProductID}, '${item.ProductName}')">Add Production</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `
       : '<p class="empty">No inventory records. Create products first.</p>';
       
   } catch (e) {
@@ -379,68 +355,50 @@ async function loadManufacturerOrders(status = null) {
     
     const ordersListDiv = document.getElementById('orders-list');
     ordersListDiv.innerHTML = orders.length
-      ? orders.map(order => `
-          <div class="order-card">
-            <div class="order-header">
-              <span class="order-id">Order #${order.OrderID}</span>
-              <span class="order-status ${order.Status.toLowerCase()}">${order.Status}</span>
-            </div>
-            
-            <div class="order-info">
-              <div>
-                <strong>Distributor:</strong> ${order.DistributorName}
-              </div>
-              <div>
-                <strong>Order Date:</strong> ${new Date(order.OrderDate).toLocaleDateString()}
-              </div>
-              <div>
-                <strong>Payment Terms:</strong> ${order.PaymentTerms || 'N/A'}
-              </div>
-              <div>
-                <strong>Total Items:</strong> ${order.ItemCount} (${order.TotalQuantity} units)
-              </div>
-            </div>
-            
-            <div class="order-items">
-              <h5>Order Items</h5>
-              ${order.items.map(item => `
-                <div class="order-item">
-                  <div>
-                    <strong>${item.ProductName}</strong><br>
-                    <small>${item.Quantity} units @ $${parseFloat(item.UnitPrice).toFixed(2)}</small>
-                  </div>
-                  <div style="text-align: right;">
-                    <strong>$${parseFloat(item.LineTotal).toFixed(2)}</strong><br>
-                    <small>${item.ItemStatus}</small>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-            
-            <div class="order-total">
-              Total: $${parseFloat(order.TotalAmount).toFixed(2)}
-            </div>
-            
-            ${order.Status === 'Pending' ? `
-              <div class="order-actions">
-                <button class="btn btn-success" onclick="confirmOrder(${order.OrderID})">
-                  ✅ Confirm Order
-                </button>
-                <button class="btn btn-danger" onclick="cancelOrder(${order.OrderID})">
-                  ❌ Cancel Order
-                </button>
-              </div>
-            ` : ''}
-            
-            ${order.Status === 'Confirmed' ? `
-              <div class="order-actions">
-                <button class="btn btn-success" onclick="shipOrder(${order.OrderID})">
-                  🚚 Mark as Shipped
-                </button>
-              </div>
-            ` : ''}
-          </div>
-        `).join('')
+      ? `
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Distributor</th>
+              <th>Date</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orders.map(order => `
+              <tr>
+                <td>
+                  <strong>#${order.OrderID}</strong><br>
+                  <small>${order.PaymentTerms || 'N/A'}</small>
+                </td>
+                <td>${order.DistributorName || 'N/A'}</td>
+                <td>${order.OrderDate ? new Date(order.OrderDate).toLocaleDateString() : '—'}</td>
+                <td>
+                  <strong>${order.ItemCount || 0}</strong> items<br>
+                  <small>${order.TotalQuantity || 0} units</small><br>
+                  ${order.items && order.items.length ? `<button class="btn btn-secondary" data-items="${encodeURIComponent(JSON.stringify(order.items))}" onclick="viewManufacturerOrderItems(this.dataset.items, ${order.OrderID})">View Items</button>` : ''}
+                </td>
+                <td><strong>$${parseFloat(order.TotalAmount || 0).toFixed(2)}</strong></td>
+                <td><span class="badge">${order.Status}</span></td>
+                <td>
+                  ${order.Status === 'Pending' ? `
+                    <button class="btn btn-success" onclick="confirmOrder(${order.OrderID})">Confirm</button>
+                    <button class="btn btn-danger" onclick="cancelOrder(${order.OrderID})">Cancel</button>
+                  ` : order.Status === 'Confirmed' ? `
+                    <button class="btn btn-success" onclick="shipOrder(${order.OrderID})">Mark Shipped</button>
+                  ` : order.Status === 'Shipped' ? `
+                    <span style="color:#2196F3;">In Transit</span>
+                  ` : '<span style="color:#4CAF50;">Completed</span>'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `
       : `<p class="empty">No ${status && status !== 'All' ? status.toLowerCase() : ''} orders found.</p>`;
       
   } catch (e) {
@@ -449,12 +407,33 @@ async function loadManufacturerOrders(status = null) {
   }
 }
 
-function filterOrders(status) {
+function viewManufacturerOrderItems(serializedItems, orderId) {
+  let items = [];
+  try {
+    items = JSON.parse(decodeURIComponent(serializedItems || '[]'));
+  } catch (err) {
+    console.error('Failed to parse order items:', err);
+  }
+  
+  if (!Array.isArray(items) || !items.length) {
+    alert('No items found for this order.');
+    return;
+  }
+  
+  const list = items.map(item =>
+    `• ${item.ProductName}: ${item.Quantity} units @ $${parseFloat(item.UnitPrice || 0).toFixed(2)} = $${parseFloat(item.LineTotal || 0).toFixed(2)}`
+  ).join('\n');
+  
+  alert(`Order #${orderId} Items:\n\n${list}`);
+}
+
+function filterOrders(evt, status) {
   currentOrderFilter = status;
   
-  // Update filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+  document.querySelectorAll('#tab-orders .filter-btn').forEach(btn => btn.classList.remove('active'));
+  if (evt && evt.currentTarget) {
+    evt.currentTarget.classList.add('active');
+  }
   
   loadManufacturerOrders(status);
 }
@@ -785,29 +764,6 @@ function editProduct(productId) {
       });
     })
     .catch(e => alert('❌ ' + e.message));
-}
-
-// Toggle product status
-function toggleProductStatus(productId, currentStatus) {
-  const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-  const action = currentStatus === 'Active' ? 'deactivate' : 'activate';
-  
-  if (!confirm(`Are you sure you want to ${action} this product?`)) return;
-  
-  fetch(`${API}/manufacturer/${currentUser.UserID}/products/${productId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ Status: newStatus })
-  })
-  .then(res => {
-    if (!res.ok) throw new Error('Failed to update status');
-    return res.json();
-  })
-  .then(() => {
-    alert(`✅ Product ${action}d successfully!`);
-    loadManufacturerProducts();
-  })
-  .catch(e => alert('❌ ' + e.message));
 }
 
 // Add production to inventory

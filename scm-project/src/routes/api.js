@@ -54,6 +54,7 @@ const {
   receiveRetailerOrder,
   getRetailerInventoryWithCosts,
   setRetailerPricing,
+  updateRetailerInventoryItem,
   getRetailerAnalytics,
   // Retailer - Customer Orders Management
   getRetailerCustomerOrders,
@@ -127,6 +128,7 @@ router.get('/retailer/:id/orders', getRetailerOrders);
 router.patch('/retailer/:id/orders/:orderId/receive', receiveRetailerOrder);
 router.get('/retailer/:id/inventory-costs', getRetailerInventoryWithCosts);
 router.patch('/retailer/:id/products/:productId/price', setRetailerPricing);
+router.patch('/retailer/:id/products/:productId', updateRetailerInventoryItem);
 router.get('/retailer/:id/analytics', getRetailerAnalytics);
 
 // Retailer - Customer Orders Management

@@ -235,8 +235,7 @@
     <div class="tabs">
       <button class="tab active" onclick="switchTab('catalog')">Distributor Catalog</button>
       <button class="tab" onclick="switchTab('orders')">My Orders</button>
-      <button class="tab" onclick="switchTab('inventory')">My Inventory</button>
-      <button class="tab" onclick="switchTab('pricing')">Pricing</button>
+      <button class="tab" onclick="switchTab('inventory')">Inventory & Pricing</button>
       <button class="tab" onclick="switchTab('customer-orders')">Customer Orders</button>
     </div>
 
@@ -268,23 +267,11 @@
     <div id="inventory" class="tab-content">
       <div class="section">
         <div class="section-header">
-          <h2>My Inventory</h2>
+          <h2>Inventory & Pricing</h2>
           <button onclick="loadInventory()">Refresh</button>
         </div>
         <div id="inventory-table-container">
           <!-- Inventory table will be loaded here -->
-        </div>
-      </div>
-    </div>
-
-    <div id="pricing" class="tab-content">
-      <div class="section">
-        <div class="section-header">
-          <h2>Pricing Management</h2>
-          <button onclick="loadPricing()">Refresh</button>
-        </div>
-        <div id="pricing-table-container">
-          <!-- Pricing table will be loaded here -->
         </div>
       </div>
     </div>
@@ -332,31 +319,27 @@
     </div>
   </div>
 
-  <!-- Pricing Modal -->
-  <div id="pricingModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Set Customer Price</h2>
-        <button class="close" onclick="closePricingModal()">&times;</button>
-      </div>
-      <div id="pricing-product-info" style="margin-bottom: 1.5rem;"></div>
-      <div class="form-group">
-        <label>Customer Price ($):</label>
-        <input type="number" id="customer-price" step="0.01" min="0.01">
-      </div>
-      <div id="margin-preview" style="border: 1px solid black; padding: 1rem; margin: 1rem 0;"></div>
-      <div style="display: flex; gap: 1rem;">
-        <button onclick="savePrice()">Save Price</button>
-        <button onclick="closePricingModal()">Cancel</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     const API = 'http://localhost:3000/api';
     let currentUser = null;
     let currentProduct = null;
     let catalogProducts = [];
+
+    function getDistributorUnitPrice(product) {
+      const price = product.SellPriceToRetailer ?? product.DistributorPrice ?? product.UnitPrice ?? 0;
+      const parsed = parseFloat(price);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    function getDistributorAvailableStock(product) {
+      const stock = product.AvailableForOrder ?? product.DistributorStock ?? product.QuantityAvailable ?? 0;
+      return Number(stock) || 0;
+    }
+
+    function getDistributorMinOrder(product) {
+      const min = product.MinOrderQuantity ?? product.DistributorMinOrder ?? 1;
+      return Number(min) || 1;
+    }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
@@ -430,7 +413,6 @@
         case 'catalog': loadCatalog(); break;
         case 'orders': loadOrders(); break;
         case 'inventory': loadInventory(); break;
-        case 'pricing': loadPricing(); break;
         case 'customer-orders': loadCustomerOrders(); break;
       }
     }
@@ -448,22 +430,27 @@
           return;
         }
 
-        grid.innerHTML = products.map(p => `
+        grid.innerHTML = products.map(p => {
+          const unitPrice = getDistributorUnitPrice(p);
+          const availableStock = getDistributorAvailableStock(p);
+          const minOrder = getDistributorMinOrder(p);
+          return `
           <div class="product-card">
             <div class="product-name">${p.ProductName}</div>
             <div class="product-details">
               ${p.Description || 'No description'}<br><br>
-              <span class="badge">📦 ${p.DistributorName}</span>
-              <span class="badge">🏭 ${p.ManufacturerName}</span><br>
-              <span class="badge">${p.DistributorStock > 0 ? `Stock: ${p.DistributorStock}` : 'Out of Stock'}</span>
+              <span class="badge">Distributor: ${p.DistributorName}</span>
+              <span class="badge">Manufacturer: ${p.ManufacturerName}</span><br>
+              <span class="badge">${availableStock > 0 ? `Stock: ${availableStock}` : 'Out of Stock'}</span>
             </div>
-            <div class="price-display">$${parseFloat(p.DistributorPrice || 0).toFixed(2)}</div>
-            ${p.DistributorMinOrder ? `<div style="font-size: 0.9rem; margin-bottom: 0.5rem;">Min Order: ${p.DistributorMinOrder} units</div>` : ''}
-            <button ${p.DistributorStock === 0 ? 'disabled' : ''} onclick="openOrderModal(${p.ProductID})" style="width: 100%;">
+            <div class="price-display">$${unitPrice.toFixed(2)}</div>
+            ${minOrder ? `<div style="font-size: 0.9rem; margin-bottom: 0.5rem;">Min Order: ${minOrder} units</div>` : ''}
+            <button ${availableStock === 0 ? 'disabled' : ''} onclick="openOrderModal(${p.ProductID})" style="width: 100%;">
               Order Now
             </button>
           </div>
-        `).join('');
+        `;
+        }).join('');
       } catch (error) {
         console.error('Failed to load catalog:', error);
         document.getElementById('catalog-grid').innerHTML = '<p><strong>Failed to load catalog. Please try again.</strong></p>';
@@ -475,19 +462,23 @@
       const product = catalogProducts.find(p => p.ProductID === productId);
       if (!product) return;
 
-      currentProduct = product;
+      const unitPrice = getDistributorUnitPrice(product);
+      const availableStock = getDistributorAvailableStock(product);
+      const minOrder = getDistributorMinOrder(product);
+
+      currentProduct = { ...product, UnitPrice: unitPrice, AvailableStock: availableStock, MinOrder: minOrder };
       document.getElementById('modal-product-info').innerHTML = `
         <h3>${product.ProductName}</h3>
         <p>Supplier: ${product.DistributorName}</p>
-        <p>Price: $${parseFloat(product.DistributorPrice).toFixed(2)} per unit</p>
-        <p>Available: ${product.DistributorStock} units</p>
-        ${product.DistributorMinOrder ? `<p style="color: var(--warning-orange);">Min Order: ${product.DistributorMinOrder} units</p>` : ''}
+        <p>Price: $${unitPrice.toFixed(2)} per unit</p>
+        <p>Available: ${availableStock} units</p>
+        ${minOrder ? `<p style="color: var(--warning-orange);">Min Order: ${minOrder} units</p>` : ''}
       `;
 
       const qtyInput = document.getElementById('order-quantity');
-      qtyInput.value = product.DistributorMinOrder || 1;
-      qtyInput.min = product.DistributorMinOrder || 1;
-      qtyInput.max = product.DistributorStock;
+      qtyInput.value = minOrder || 1;
+      qtyInput.min = minOrder || 1;
+      qtyInput.max = availableStock;
       
       updateOrderSubtotal();
       
@@ -498,7 +489,7 @@
 
     function updateOrderSubtotal() {
       const qty = parseInt(document.getElementById('order-quantity').value) || 0;
-      const subtotal = qty * parseFloat(currentProduct.DistributorPrice);
+      const subtotal = qty * (currentProduct?.UnitPrice || 0);
       document.getElementById('order-subtotal').textContent = subtotal.toFixed(2);
     }
 
@@ -516,13 +507,13 @@
         return;
       }
 
-      if (currentProduct.DistributorMinOrder && quantity < currentProduct.DistributorMinOrder) {
-        alert(`Minimum order quantity is ${currentProduct.DistributorMinOrder} units`);
+      if (currentProduct.MinOrder && quantity < currentProduct.MinOrder) {
+        alert(`Minimum order quantity is ${currentProduct.MinOrder} units`);
         return;
       }
 
-      if (quantity > currentProduct.DistributorStock) {
-        alert(`Only ${currentProduct.DistributorStock} units available`);
+      if (quantity > currentProduct.AvailableStock) {
+        alert(`Only ${currentProduct.AvailableStock} units available`);
         return;
       }
 
@@ -631,7 +622,7 @@
       }
     }
 
-    // Load Inventory
+    // Load Inventory & Pricing (combined)
     async function loadInventory() {
       try {
         const response = await fetch(`${API}/retailer/${currentUser.UserID}/inventory-costs`);
@@ -649,153 +640,162 @@
               <tr>
                 <th>Product</th>
                 <th>Stock</th>
-                <th>Cost Price</th>
                 <th>Customer Price</th>
-                <th>Margin</th>
-                <th>Value</th>
+                <th>Margin Preview</th>
                 <th>Supplier</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              ${inventory.map(item => `
-                <tr>
-                  <td>
-                    <strong>${item.ProductName}</strong><br>
-                    <small>${item.ManufacturerName}</small>
-                  </td>
-                  <td>
-                    <strong>${item.Stock || 0}</strong> units<br>
-                    <span class="badge">${item.StockStatus}</span>
-                  </td>
-                  <td>$${item.CostPrice ? parseFloat(item.CostPrice).toFixed(2) : 'N/A'}</td>
-                  <td>$${item.CustomerPrice ? parseFloat(item.CustomerPrice).toFixed(2) : 'Not Set'}</td>
-                  <td><strong>${item.ProfitMarginPercent ? parseFloat(item.ProfitMarginPercent).toFixed(1) + '%' : 'N/A'}</strong></td>
-                  <td><strong>$${item.InventoryValue ? parseFloat(item.InventoryValue).toFixed(2) : '0.00'}</strong></td>
-                  <td>${item.SupplierName || 'N/A'}</td>
-                </tr>
-              `).join('')}
+              ${inventory.map(item => {
+                const currentPrice = item.CustomerPrice ? parseFloat(item.CustomerPrice) : null;
+                const defaultPrice = currentPrice ?? (item.CostPrice ? parseFloat(item.CostPrice) * 1.25 : 0);
+                return `
+                  <tr id="inventory-row-${item.ProductID}" data-cost-price="${item.CostPrice || 0}">
+                    <td>
+                      <strong>${item.ProductName}</strong><br>
+                      <small>${item.ManufacturerName || ''}</small>
+                    </td>
+                    <td>
+                      <div style="margin-bottom: 0.5rem;">
+                        <strong>${item.Stock || 0}</strong> units
+                        <span class="badge">${item.StockStatus}</span>
+                      </div>
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value="${item.Stock || 0}" 
+                        class="stock-input" 
+                        aria-label="Update stock for ${item.ProductName}">
+                    </td>
+                    <td>
+                      <div style="margin-bottom: 0.5rem;">
+                        <small>Current: ${currentPrice ? '$' + currentPrice.toFixed(2) : 'Not set'}</small>
+                      </div>
+                      <input 
+                        type="number" 
+                        step="0.01" 
+                        min="0" 
+                        value="${defaultPrice.toFixed(2)}" 
+                        class="price-input" 
+                        aria-label="Update price for ${item.ProductName}">
+                      <div style="margin-top: 0.25rem;">
+                        <small>Cost: ${item.CostPrice ? '$' + parseFloat(item.CostPrice).toFixed(2) : 'N/A'}</small>
+                      </div>
+                    </td>
+                    <td class="margin-cell"><small>Enter a price to see margin.</small></td>
+                    <td>${item.SupplierName || 'N/A'}</td>
+                    <td>
+                      <button class="save-btn" onclick="saveInventoryItem(${item.ProductID})">Save Changes</button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         `;
+
+        inventory.forEach(item => {
+          const row = document.getElementById(`inventory-row-${item.ProductID}`);
+          if (row) {
+            attachInventoryRowEvents(row);
+            updateMarginPreview(row);
+          }
+        });
       } catch (error) {
         console.error('Failed to load inventory:', error);
         document.getElementById('inventory-table-container').innerHTML = '<p><strong>Failed to load inventory. Please try again.</strong></p>';
       }
     }
 
-    // Load Pricing
-    async function loadPricing() {
-      try {
-        const response = await fetch(`${API}/retailer/${currentUser.UserID}/inventory-costs`);
-        const inventory = await response.json();
-
-        const container = document.getElementById('pricing-table-container');
-        if (inventory.length === 0) {
-          container.innerHTML = '<p>No products to price yet.</p>';
-          return;
-        }
-
-        container.innerHTML = `
-          <table>
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Cost Price</th>
-                <th>Current Customer Price</th>
-                <th>Profit Margin</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${inventory.map(item => `
-                <tr>
-                  <td><strong>${item.ProductName}</strong></td>
-                  <td>$${item.CostPrice ? parseFloat(item.CostPrice).toFixed(2) : 'N/A'}</td>
-                  <td>$${item.CustomerPrice ? parseFloat(item.CustomerPrice).toFixed(2) : 'Not Set'}</td>
-                  <td>
-                    <strong>${item.ProfitMarginPercent ? parseFloat(item.ProfitMarginPercent).toFixed(1) + '%' : 'N/A'}</strong>
-                    ${item.ProfitPerUnit ? `<br><small>($${parseFloat(item.ProfitPerUnit).toFixed(2)}/unit)</small>` : ''}
-                  </td>
-                  <td>
-                    <button onclick="openPricingModal(${item.ProductID}, '${item.ProductName.replace(/'/g, "\\'")}', ${item.CostPrice || 0}, ${item.CustomerPrice || 0})">
-                      Set Price
-                    </button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-      } catch (error) {
-        console.error('Failed to load pricing:', error);
-        document.getElementById('pricing-table-container').innerHTML = '<p><strong>Failed to load pricing. Please try again.</strong></p>';
+    function attachInventoryRowEvents(row) {
+      const priceInput = row.querySelector('.price-input');
+      if (priceInput) {
+        priceInput.addEventListener('input', () => updateMarginPreview(row));
       }
     }
 
-    // Pricing Modal
-    function openPricingModal(productId, productName, costPrice, currentPrice) {
-      currentProduct = { ProductID: productId, ProductName: productName, CostPrice: costPrice };
-      
-      document.getElementById('pricing-product-info').innerHTML = `
-        <h3>${productName}</h3>
-        <p>Cost Price: $${costPrice.toFixed(2)}</p>
-        ${currentPrice > 0 ? `<p>Current Price: $${currentPrice.toFixed(2)}</p>` : ''}
-      `;
+    function updateMarginPreview(row) {
+      const marginCell = row.querySelector('.margin-cell');
+      const priceInput = row.querySelector('.price-input');
+      const costPrice = parseFloat(row.dataset.costPrice || row.getAttribute('data-cost-price') || '0');
+      const price = parseFloat(priceInput.value);
 
-      const priceInput = document.getElementById('customer-price');
-      priceInput.value = currentPrice > 0 ? currentPrice.toFixed(2) : (costPrice * 1.5).toFixed(2);
-      
-      priceInput.oninput = () => {
-        const price = parseFloat(priceInput.value) || 0;
-        const margin = costPrice > 0 ? (((price - costPrice) / price) * 100).toFixed(1) : 0;
-        const profit = (price - costPrice).toFixed(2);
-        
-        const preview = document.getElementById('margin-preview');
-        if (price < costPrice) {
-          preview.innerHTML = `<p style="color: var(--danger-red); font-weight: bold;">⚠️ Warning: Price below cost! Loss of $${(costPrice - price).toFixed(2)} per unit</p>`;
-        } else {
-          preview.innerHTML = `<p style="color: var(--success-green); font-weight: bold;">✅ Profit Margin: ${margin}% ($${profit} per unit)</p>`;
-        }
-      };
-      
-      priceInput.oninput(); // Trigger initial calculation
-      
-      document.getElementById('pricingModal').style.display = 'block';
-    }
-
-    function closePricingModal() {
-      document.getElementById('pricingModal').style.display = 'none';
-      currentProduct = null;
-    }
-
-    async function savePrice() {
-      const price = parseFloat(document.getElementById('customer-price').value);
-      
-      if (!price || price <= 0) {
-        alert('Please enter a valid price');
+      if (!price || Number.isNaN(price)) {
+        marginCell.innerHTML = '<small>Enter a price to see margin.</small>';
+        marginCell.style.color = '#555';
         return;
       }
 
+      if (!costPrice || costPrice <= 0) {
+        marginCell.innerHTML = `<small>Margin: $${price.toFixed(2)} (cost unavailable)</small>`;
+        marginCell.style.color = '#444';
+        return;
+      }
+
+      const profit = price - costPrice;
+      const marginPercent = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
+
+      if (profit < 0) {
+        marginCell.innerHTML = `<strong style="color: #f44336;">Loss of $${Math.abs(profit).toFixed(2)} per unit (${marginPercent}% margin)</strong>`;
+      } else {
+        marginCell.innerHTML = `<strong style="color: #4caf50;">Profit $${profit.toFixed(2)} per unit (${marginPercent}% margin)</strong>`;
+      }
+    }
+
+    async function saveInventoryItem(productId) {
+      const row = document.getElementById(`inventory-row-${productId}`);
+      if (!row) return;
+
+      const priceInput = row.querySelector('.price-input');
+      const stockInput = row.querySelector('.stock-input');
+      const price = parseFloat(priceInput.value);
+      const stock = parseInt(stockInput.value, 10);
+
+      if (!price || Number.isNaN(price) || price <= 0) {
+        alert('Please enter a valid customer price.');
+        return;
+      }
+
+      if (Number.isNaN(stock) || stock < 0) {
+        alert('Stock must be zero or greater.');
+        return;
+      }
+
+      const saveButton = row.querySelector('.save-btn');
+      const originalLabel = saveButton ? saveButton.textContent : '';
+      if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saving...';
+      }
+
       try {
-        const response = await fetch(`${API}/retailer/${currentUser.UserID}/products/${currentProduct.ProductID}/price`, {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/products/${productId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ CustomerPrice: price })
+          body: JSON.stringify({
+            Price: Number(price.toFixed(2)),
+            Stock: stock
+          })
         });
 
         const result = await response.json();
-        
-        if (response.ok) {
-          alert(result.message + (result.warning ? '\n\n' + result.warning : ''));
-          closePricingModal();
-          loadPricing();
-          loadInventory();
-        } else {
-          alert(result.message || 'Failed to update price');
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to update inventory item.');
         }
+
+        alert('✅ ' + result.message + (result.warning ? '\n\n⚠️ ' + result.warning : ''));
+        loadInventory();
+        loadStatsQuick();
       } catch (error) {
-        console.error('Update price error:', error);
-        alert('Failed to update price. Please try again.');
+        console.error('Inventory update error:', error);
+        alert('❌ ' + error.message);
+      } finally {
+        if (saveButton) {
+          saveButton.disabled = false;
+          saveButton.textContent = originalLabel || 'Save Changes';
+        }
       }
     }
 
@@ -818,19 +818,23 @@
       const product = catalogProducts.find(p => p.ProductID === productId);
       if (!product) return;
 
-      currentProduct = product;
+      const unitPrice = getDistributorUnitPrice(product);
+      const availableStock = getDistributorAvailableStock(product);
+      const minOrder = getDistributorMinOrder(product);
+
+      currentProduct = { ...product, UnitPrice: unitPrice, AvailableStock: availableStock, MinOrder: minOrder };
       document.getElementById('modal-product-info').innerHTML = `
         <h3 style="margin: 0 0 1rem 0; border-bottom: 1px solid black; padding-bottom: 0.5rem;">${product.ProductName}</h3>
         <p><strong>Supplier:</strong> ${product.DistributorName}</p>
-        <p><strong>Price:</strong> $${parseFloat(product.DistributorPrice).toFixed(2)} per unit</p>
-        <p><strong>Available:</strong> ${product.DistributorStock} units</p>
-        ${product.DistributorMinOrder ? `<p><strong>Min Order:</strong> ${product.DistributorMinOrder} units</p>` : ''}
+        <p><strong>Price:</strong> $${unitPrice.toFixed(2)} per unit</p>
+        <p><strong>Available:</strong> ${availableStock} units</p>
+        ${minOrder ? `<p><strong>Min Order:</strong> ${minOrder} units</p>` : ''}
       `;
 
       const qtyInput = document.getElementById('order-quantity');
-      qtyInput.value = product.DistributorMinOrder || 1;
-      qtyInput.min = product.DistributorMinOrder || 1;
-      qtyInput.max = product.DistributorStock;
+      qtyInput.value = minOrder || 1;
+      qtyInput.min = minOrder || 1;
+      qtyInput.max = availableStock;
       
       updateOrderSubtotal();
       
@@ -841,7 +845,7 @@
 
     function updateOrderSubtotal() {
       const qty = parseInt(document.getElementById('order-quantity').value) || 0;
-      const subtotal = qty * parseFloat(currentProduct.DistributorPrice);
+      const subtotal = qty * (currentProduct?.UnitPrice || 0);
       document.getElementById('order-subtotal').textContent = subtotal.toFixed(2);
     }
 
@@ -859,13 +863,13 @@
         return;
       }
 
-      if (currentProduct.DistributorMinOrder && quantity < currentProduct.DistributorMinOrder) {
-        alert(`Minimum order quantity is ${currentProduct.DistributorMinOrder} units`);
+      if (currentProduct.MinOrder && quantity < currentProduct.MinOrder) {
+        alert(`Minimum order quantity is ${currentProduct.MinOrder} units`);
         return;
       }
 
-      if (quantity > currentProduct.DistributorStock) {
-        alert(`Only ${currentProduct.DistributorStock} units available`);
+      if (quantity > currentProduct.AvailableStock) {
+        alert(`Only ${currentProduct.AvailableStock} units available`);
         return;
       }
 
@@ -923,73 +927,6 @@
       } catch (error) {
         console.error('Receive order error:', error);
         alert('❌ Failed to receive order. Please try again.');
-      }
-    }
-
-    // Pricing Modal
-    function openPricingModal(productId, productName, costPrice, currentPrice) {
-      currentProduct = { ProductID: productId, ProductName: productName, CostPrice: costPrice };
-      
-      document.getElementById('pricing-product-info').innerHTML = `
-        <h3 style="margin: 0 0 10px 0;">${productName}</h3>
-        <p><strong>Cost Price:</strong> $${costPrice.toFixed(2)}</p>
-        ${currentPrice > 0 ? `<p><strong>Current Price:</strong> $${currentPrice.toFixed(2)}</p>` : ''}
-      `;
-
-      const priceInput = document.getElementById('customer-price');
-      priceInput.value = currentPrice > 0 ? currentPrice.toFixed(2) : (costPrice * 1.5).toFixed(2);
-      
-      priceInput.oninput = () => {
-        const price = parseFloat(priceInput.value) || 0;
-        const margin = costPrice > 0 ? (((price - costPrice) / price) * 100).toFixed(1) : 0;
-        const profit = (price - costPrice).toFixed(2);
-        
-        const preview = document.getElementById('margin-preview');
-        if (price < costPrice) {
-          preview.innerHTML = `<p style="color: #f44336; font-weight: bold;">⚠️ Warning: Price below cost! Loss of $${(costPrice - price).toFixed(2)} per unit</p>`;
-        } else {
-          preview.innerHTML = `<p style="color: #4caf50; font-weight: bold;">✅ Profit Margin: ${margin}% ($${profit} per unit)</p>`;
-        }
-      };
-      
-      priceInput.oninput();
-      
-      document.getElementById('pricingModal').style.display = 'block';
-    }
-
-    function closePricingModal() {
-      document.getElementById('pricingModal').style.display = 'none';
-      currentProduct = null;
-    }
-
-    async function savePrice() {
-      const price = parseFloat(document.getElementById('customer-price').value);
-      
-      if (!price || price <= 0) {
-        alert('Please enter a valid price');
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API}/retailer/${currentUser.UserID}/products/${currentProduct.ProductID}/price`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ CustomerPrice: price })
-        });
-
-        const result = await response.json();
-        
-        if (response.ok) {
-          alert('✅ ' + result.message + (result.warning ? '\n\n⚠️ ' + result.warning : ''));
-          closePricingModal();
-          loadPricing();
-          loadInventory();
-        } else {
-          alert('❌ ' + (result.message || 'Failed to update price'));
-        }
-      } catch (error) {
-        console.error('Update price error:', error);
-        alert('❌ Failed to update price. Please try again.');
       }
     }
 

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Dashboard - SCM System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <img src="assets/logo.png" alt="the-Weft logo" class="logo">
+      <h1>Customer Dashboard</h1>
+    </div>
+    <nav>
+      <button onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <div class="container customer-container">
+    <div id="stats-section" class="stat-grid"></div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(event, 'catalog')">Retailer Catalog</button>
+      <button class="tab" onclick="switchTab(event, 'orders')">My Orders</button>
+    </div>
+
+    <div id="catalog" class="tab-content active">
+      <div class="section">
+        <div class="section-header">
+          <h2>Retailer Catalog</h2>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="catalog-search" placeholder="Search products..." style="flex:1; padding:0.5rem; border:1px solid black;">
+            <button onclick="loadCatalog()">Refresh</button>
+          </div>
+        </div>
+        <div id="catalog-grid" class="product-grid"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-header">
+          <h2>Your Cart</h2>
+          <button onclick="clearCart()">Clear Cart</button>
+        </div>
+        <div id="cart" class="list"></div>
+        <div class="section-header" style="margin-top:2rem;">
+          <h2>Checkout</h2>
+        </div>
+        <form id="checkout-form">
+          <div class="form-group">
+            <label>Shipping Address</label>
+            <textarea name="ShippingAddress" rows="2" placeholder="Address" required></textarea>
+          </div>
+          <button type="submit">Place Order</button>
+          <p id="checkout-error" class="error"></p>
+        </form>
+      </div>
+    </div>
+
+    <div id="orders" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2>My Orders</h2>
+          <button onclick="loadOrders()">Refresh</button>
+        </div>
+        <div id="orders-list" class="table-responsive"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="customer-dashboard.js"></script>
+</body>
+</html>
+

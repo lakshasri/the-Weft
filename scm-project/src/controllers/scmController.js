@@ -2351,7 +2351,116 @@ exports.getRetailerInventoryWithCosts = async (req, res) => {
   }
 };
 
-// 6. Set Retailer Pricing
+// 6. Update Retailer Inventory Item (price + stock)
+exports.updateRetailerInventoryItem = async (req, res) => {
+  const retailerUserId = req.params.id;
+  const productId = req.params.productId;
+  const { Price, price, CustomerPrice, Stock, stock } = req.body || {};
+
+  const updates = {};
+
+  const priceCandidate = Price ?? price ?? CustomerPrice;
+  if (priceCandidate !== undefined) {
+    const newPrice = Number(priceCandidate);
+    if (!newPrice || Number.isNaN(newPrice) || newPrice < 0) {
+      return res.status(400).json({ message: 'Valid price required.' });
+    }
+    updates.Price = newPrice;
+  }
+
+  const stockCandidate = Stock ?? stock;
+  if (stockCandidate !== undefined) {
+    const newStock = parseInt(stockCandidate, 10);
+    if (Number.isNaN(newStock) || newStock < 0) {
+      return res.status(400).json({ message: 'Stock must be 0 or greater.' });
+    }
+    updates.Stock = newStock;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ message: 'Price or stock value required.' });
+  }
+
+  try {
+    const [retailerRows] = await pool.execute(
+      `SELECT RetailerID FROM Retailers WHERE UserID = ?`,
+      [retailerUserId]
+    );
+
+    if (retailerRows.length === 0) {
+      return res.status(404).json({ message: 'Retailer not found.' });
+    }
+
+    const retailerID = retailerRows[0].RetailerID;
+
+    const [existingRows] = await pool.execute(
+      `SELECT RetailerProductID FROM RetailerProducts WHERE RetailerID = ? AND ProductID = ?`,
+      [retailerID, productId]
+    );
+
+    if (existingRows.length === 0) {
+      return res.status(404).json({ message: 'Product not found in inventory.' });
+    }
+
+    let warning = null;
+    if (updates.Price !== undefined) {
+      const [costRows] = await pool.execute(
+        `SELECT AVG(roi.UnitPrice) as CostPrice
+         FROM RetailerOrderItems roi
+         JOIN RetailerOrders ro ON roi.OrderID = ro.OrderID
+         WHERE roi.ProductID = ? AND ro.RetailerID = ? AND ro.Status = 'Received'`,
+        [productId, retailerID]
+      );
+
+      const costPrice = (costRows[0] && costRows[0].CostPrice) ? Number(costRows[0].CostPrice) : 0;
+      if (costPrice > 0 && updates.Price < costPrice) {
+        warning = `Warning: Price is below your cost ($${costPrice.toFixed(2)}). You will lose $${(costPrice - updates.Price).toFixed(2)} per unit.`;
+      }
+    }
+
+    const setClauses = [];
+    const values = [];
+
+    if (updates.Price !== undefined) {
+      setClauses.push('Price = ?');
+      values.push(updates.Price);
+    }
+    if (updates.Stock !== undefined) {
+      setClauses.push('Stock = ?');
+      values.push(updates.Stock);
+    }
+
+    values.push(retailerID, productId);
+
+    await pool.execute(
+      `UPDATE RetailerProducts SET ${setClauses.join(', ')} WHERE RetailerID = ? AND ProductID = ?`,
+      values
+    );
+
+    const [updatedRows] = await pool.execute(
+      `SELECT Price, Stock FROM RetailerProducts WHERE RetailerID = ? AND ProductID = ?`,
+      [retailerID, productId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Inventory updated successfully.',
+      warning,
+      product: updatedRows.length
+        ? {
+            ProductID: productId,
+            Price: updatedRows[0].Price,
+            Stock: updatedRows[0].Stock,
+          }
+        : null,
+    });
+  } catch (e) {
+    console.error('updateRetailerInventoryItem error:', e);
+    res.status(500).json({ message: 'Failed to update inventory item.' });
+  }
+};
+
+// 7. Set Retailer Pricing
 exports.setRetailerPricing = async (req, res) => {
   const retailerUserId = req.params.id;
   const productId = req.params.productId;

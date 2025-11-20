@@ -84,60 +84,47 @@
 
       <!-- Manufacturer Section -->
       <section id="manufacturer-panel" class="panel" hidden>
-        <div class="manufacturer-dashboard">
-          <!-- Navigation Tabs -->
-          <div class="dashboard-tabs">
-            <button class="tab-btn active" onclick="showManufacturerTab('overview')">📊 Overview</button>
-            <button class="tab-btn" onclick="showManufacturerTab('products')">📦 Products</button>
-            <button class="tab-btn" onclick="showManufacturerTab('inventory')">📋 Inventory</button>
-            <button class="tab-btn" onclick="showManufacturerTab('orders')">🚚 Orders</button>
-          </div>
+        <div id="manufacturer-stats" class="stat-grid"></div>
 
-          <!-- Overview Tab -->
-          <div id="tab-overview" class="tab-content active">
-            <h3>Sales Overview</h3>
-            <div id="sales-overview" class="overview-cards"></div>
-            
-            <div class="overview-grid">
-              <div>
-                <h4>Recent Orders</h4>
-                <div id="recent-orders-preview"></div>
-              </div>
-              <div>
-                <h4>Top Products</h4>
-                <div id="top-products-preview"></div>
+        <div class="tabs manufacturer-tabs">
+          <button class="tab manufacturer-tab active" onclick="showManufacturerTab('products')">Products</button>
+          <button class="tab manufacturer-tab" onclick="showManufacturerTab('inventory')">Inventory</button>
+          <button class="tab manufacturer-tab" onclick="showManufacturerTab('orders')">Orders</button>
+        </div>
+
+        <div id="tab-products" class="tab-content active">
+          <div class="section">
+            <div class="section-header">
+              <h2>Product Catalog</h2>
+              <button onclick="showCreateProductModal()">Create Product</button>
+            </div>
+            <div id="product-list" class="table-responsive"></div>
+          </div>
+        </div>
+
+        <div id="tab-inventory" class="tab-content">
+          <div class="section">
+            <div class="section-header">
+              <h2>Inventory Management</h2>
+              <button onclick="loadManufacturerInventory()">Refresh</button>
+            </div>
+            <div id="inventory-list" class="table-responsive"></div>
+          </div>
+        </div>
+
+        <div id="tab-orders" class="tab-content">
+          <div class="section">
+            <div class="section-header">
+              <h2>Distributor Orders</h2>
+              <div class="order-filters">
+                <button class="filter-btn active" onclick="filterOrders(event, 'All')">All</button>
+                <button class="filter-btn" onclick="filterOrders(event, 'Pending')">Pending</button>
+                <button class="filter-btn" onclick="filterOrders(event, 'Confirmed')">Confirmed</button>
+                <button class="filter-btn" onclick="filterOrders(event, 'Shipped')">Shipped</button>
+                <button class="filter-btn" onclick="filterOrders(event, 'Received')">Received</button>
               </div>
             </div>
-          </div>
-
-          <!-- Products Tab -->
-          <div id="tab-products" class="tab-content">
-            <h3>Product Catalog</h3>
-            
-            <button class="btn" onclick="showCreateProductModal()" style="margin-bottom: 1rem;">➕ Create New Product</button>
-            
-            <div id="product-list" class="list"></div>
-          </div>
-
-          <!-- Inventory Tab -->
-          <div id="tab-inventory" class="tab-content">
-            <h3>Inventory Management</h3>
-            <div id="inventory-list" class="list"></div>
-          </div>
-
-          <!-- Orders Tab -->
-          <div id="tab-orders" class="tab-content">
-            <h3>Distributor Orders</h3>
-            
-            <div class="order-filters">
-              <button class="filter-btn active" onclick="filterOrders('All')">All</button>
-              <button class="filter-btn" onclick="filterOrders('Pending')">Pending</button>
-              <button class="filter-btn" onclick="filterOrders('Confirmed')">Confirmed</button>
-              <button class="filter-btn" onclick="filterOrders('Shipped')">Shipped</button>
-              <button class="filter-btn" onclick="filterOrders('Received')">Received</button>
-            </div>
-            
-            <div id="orders-list" class="list"></div>
+            <div id="orders-list" class="table-responsive"></div>
           </div>
         </div>
       </section>
