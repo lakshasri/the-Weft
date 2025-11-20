@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retailer Dashboard - SCM System</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Minimal Black and White Theme - matching manufacturer/distributor */
+    body {
+      background: white;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      border: 2px solid black;
+      padding: 1.5rem;
+      background: white;
+    }
+    
+    .stat-card h3 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid black;
+    }
+    
+    .tab {
+      padding: 0.75rem 1.5rem;
+      background: white;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-weight: bold;
+      color: black;
+    }
+    
+    .tab.active {
+      border-bottom-color: black;
+    }
+    
+    .tab:hover {
+      background: #f5f5f5;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .section {
+      border: 2px solid black;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      background: white;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid black;
+    }
+    
+    .section-header h2 {
+      margin: 0;
+      border: none;
+      padding: 0;
+    }
+    
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .product-card {
+      border: 1px solid black;
+      padding: 1rem;
+      background: white;
+    }
+    
+    .product-card:hover {
+      background: #f5f5f5;
+    }
+    
+    .product-name {
+      font-weight: bold;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .product-details {
+      font-size: 0.9rem;
+      color: #333;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border: 1px solid black;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin: 0.25rem 0.25rem 0.25rem 0;
+    }
+    
+    .price-display {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin: 1rem 0;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    
+    th {
+      background: black;
+      color: white;
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid black;
+    }
+    
+    td {
+      padding: 0.75rem;
+      border: 1px solid black;
+    }
+    
+    tr:hover {
+      background: #f5f5f5;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+      background: white;
+      margin: 50px auto;
+      padding: 2rem;
+      border: 2px solid black;
+      max-width: 600px;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid black;
+    }
+    
+    .modal-header h2 {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+    
+    .close {
+      font-size: 2rem;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+    
+    .close:hover {
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-brand">
+      <img src="assets/logo.png" alt="the-Weft logo" class="logo">
+      <h1>Retailer Dashboard</h1>
+    </div>
+    <nav>
+      <button onclick="logout()">Logout</button>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- Stats Dashboard -->
+    <div id="stats-section" class="stat-grid">
+      <!-- Stats will be loaded here -->
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('catalog')">Distributor Catalog</button>
+      <button class="tab" onclick="switchTab('orders')">My Orders</button>
+      <button class="tab" onclick="switchTab('inventory')">My Inventory</button>
+      <button class="tab" onclick="switchTab('pricing')">Pricing</button>
+      <button class="tab" onclick="switchTab('customer-orders')">Customer Orders</button>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="catalog" class="tab-content active">
+      <div class="section">
+        <div class="section-header">
+          <h2>Distributor Catalog</h2>
+          <button onclick="loadCatalog()">Refresh</button>
+        </div>
+        <div id="catalog-grid" class="product-grid">
+          <!-- Products will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <div id="orders" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2>My Purchase Orders</h2>
+          <button onclick="loadOrders()">Refresh</button>
+        </div>
+        <div id="orders-list">
+          <!-- Orders will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <div id="inventory" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2>My Inventory</h2>
+          <button onclick="loadInventory()">Refresh</button>
+        </div>
+        <div id="inventory-table-container">
+          <!-- Inventory table will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <div id="pricing" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2>Pricing Management</h2>
+          <button onclick="loadPricing()">Refresh</button>
+        </div>
+        <div id="pricing-table-container">
+          <!-- Pricing table will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <div id="customer-orders" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2>Customer Orders</h2>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button onclick="filterCustomerOrders(null)" id="filter-all" class="active" style="padding: 0.5rem 1rem;">All</button>
+            <button onclick="filterCustomerOrders('Pending')" id="filter-pending" style="padding: 0.5rem 1rem;">Pending</button>
+            <button onclick="filterCustomerOrders('Confirmed')" id="filter-confirmed" style="padding: 0.5rem 1rem;">Confirmed</button>
+            <button onclick="filterCustomerOrders('Shipped')" id="filter-shipped" style="padding: 0.5rem 1rem;">Shipped</button>
+            <button onclick="filterCustomerOrders('Delivered')" id="filter-delivered" style="padding: 0.5rem 1rem;">Delivered</button>
+            <button onclick="loadCustomerOrders()" style="padding: 0.5rem 1rem; margin-left: 1rem;">Refresh</button>
+          </div>
+        </div>
+        <div id="customer-orders-list">
+          <!-- Customer orders will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Order Modal -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Place Order</h2>
+        <button class="close" onclick="closeOrderModal()">&times;</button>
+      </div>
+      <div id="modal-product-info" style="margin-bottom: 1.5rem;"></div>
+      <div class="form-group">
+        <label>Quantity to Order:</label>
+        <input type="number" id="order-quantity" min="1" value="1">
+      </div>
+      <div style="border: 2px solid black; padding: 1rem; margin: 1rem 0;">
+        <strong>Subtotal: $<span id="order-subtotal">0.00</span></strong>
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <button onclick="confirmOrder()">Confirm Order</button>
+        <button onclick="closeOrderModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pricing Modal -->
+  <div id="pricingModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Set Customer Price</h2>
+        <button class="close" onclick="closePricingModal()">&times;</button>
+      </div>
+      <div id="pricing-product-info" style="margin-bottom: 1.5rem;"></div>
+      <div class="form-group">
+        <label>Customer Price ($):</label>
+        <input type="number" id="customer-price" step="0.01" min="0.01">
+      </div>
+      <div id="margin-preview" style="border: 1px solid black; padding: 1rem; margin: 1rem 0;"></div>
+      <div style="display: flex; gap: 1rem;">
+        <button onclick="savePrice()">Save Price</button>
+        <button onclick="closePricingModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3000/api';
+    let currentUser = null;
+    let currentProduct = null;
+    let catalogProducts = [];
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      if (!currentUser || currentUser.Role !== 'Retailer') {
+        alert('Please log in as a Retailer');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Load initial data
+      loadStatsQuick();
+      loadCatalog();
+    });
+
+    function logout() {
+      localStorage.removeItem('currentUser');
+      window.location.href = 'index.html';
+    }
+
+    // Load Quick Stats
+    async function loadStatsQuick() {
+      try {
+        const [catalogRes, ordersRes, inventoryRes] = await Promise.all([
+          fetch(`${API}/retailer/distributor-catalog`),
+          fetch(`${API}/retailer/${currentUser.UserID}/orders`),
+          fetch(`${API}/retailer/${currentUser.UserID}/inventory-costs`)
+        ]);
+
+        const catalog = await catalogRes.json();
+        const orders = await ordersRes.json();
+        const inventory = await inventoryRes.json();
+
+        const totalSpent = orders.reduce((sum, o) => sum + parseFloat(o.TotalAmount || 0), 0);
+        const inventoryValue = inventory.reduce((sum, i) => sum + (parseFloat(i.CostPrice || 0) * (i.Stock || 0)), 0);
+
+        document.getElementById('stats-section').innerHTML = `
+          <div class="stat-card">
+            <h3>Available Products</h3>
+            <div class="stat-value">${catalog.length}</div>
+          </div>
+          <div class="stat-card">
+            <h3>Total Orders</h3>
+            <div class="stat-value">${orders.length}</div>
+          </div>
+          <div class="stat-card">
+            <h3>Total Spent</h3>
+            <div class="stat-value">$${totalSpent.toFixed(0)}</div>
+          </div>
+          <div class="stat-card">
+            <h3>Inventory Value</h3>
+            <div class="stat-value">$${inventoryValue.toFixed(0)}</div>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    function switchTab(tabName) {
+      // Update buttons
+      document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      // Update content
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(tabName).classList.add('active');
+
+      // Load data for the tab
+      switch(tabName) {
+        case 'catalog': loadCatalog(); break;
+        case 'orders': loadOrders(); break;
+        case 'inventory': loadInventory(); break;
+        case 'pricing': loadPricing(); break;
+        case 'customer-orders': loadCustomerOrders(); break;
+      }
+    }
+
+    // Load Distributor Catalog
+    async function loadCatalog() {
+      try {
+        const response = await fetch(`${API}/retailer/distributor-catalog`);
+        const products = await response.json();
+        catalogProducts = products;
+
+        const grid = document.getElementById('catalog-grid');
+        if (products.length === 0) {
+          grid.innerHTML = '<p>No products available from distributors at this time.</p>';
+          return;
+        }
+
+        grid.innerHTML = products.map(p => `
+          <div class="product-card">
+            <div class="product-name">${p.ProductName}</div>
+            <div class="product-details">
+              ${p.Description || 'No description'}<br><br>
+              <span class="badge">📦 ${p.DistributorName}</span>
+              <span class="badge">🏭 ${p.ManufacturerName}</span><br>
+              <span class="badge">${p.DistributorStock > 0 ? `Stock: ${p.DistributorStock}` : 'Out of Stock'}</span>
+            </div>
+            <div class="price-display">$${parseFloat(p.DistributorPrice || 0).toFixed(2)}</div>
+            ${p.DistributorMinOrder ? `<div style="font-size: 0.9rem; margin-bottom: 0.5rem;">Min Order: ${p.DistributorMinOrder} units</div>` : ''}
+            <button ${p.DistributorStock === 0 ? 'disabled' : ''} onclick="openOrderModal(${p.ProductID})" style="width: 100%;">
+              Order Now
+            </button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Failed to load catalog:', error);
+        document.getElementById('catalog-grid').innerHTML = '<p><strong>Failed to load catalog. Please try again.</strong></p>';
+      }
+    }
+
+    // Open Order Modal
+    function openOrderModal(productId) {
+      const product = catalogProducts.find(p => p.ProductID === productId);
+      if (!product) return;
+
+      currentProduct = product;
+      document.getElementById('modal-product-info').innerHTML = `
+        <h3>${product.ProductName}</h3>
+        <p>Supplier: ${product.DistributorName}</p>
+        <p>Price: $${parseFloat(product.DistributorPrice).toFixed(2)} per unit</p>
+        <p>Available: ${product.DistributorStock} units</p>
+        ${product.DistributorMinOrder ? `<p style="color: var(--warning-orange);">Min Order: ${product.DistributorMinOrder} units</p>` : ''}
+      `;
+
+      const qtyInput = document.getElementById('order-quantity');
+      qtyInput.value = product.DistributorMinOrder || 1;
+      qtyInput.min = product.DistributorMinOrder || 1;
+      qtyInput.max = product.DistributorStock;
+      
+      updateOrderSubtotal();
+      
+      qtyInput.oninput = updateOrderSubtotal;
+      
+      document.getElementById('orderModal').style.display = 'block';
+    }
+
+    function updateOrderSubtotal() {
+      const qty = parseInt(document.getElementById('order-quantity').value) || 0;
+      const subtotal = qty * parseFloat(currentProduct.DistributorPrice);
+      document.getElementById('order-subtotal').textContent = subtotal.toFixed(2);
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').style.display = 'none';
+      currentProduct = null;
+    }
+
+    // Confirm Order
+    async function confirmOrder() {
+      const quantity = parseInt(document.getElementById('order-quantity').value);
+      
+      if (!quantity || quantity < 1) {
+        alert('Please enter a valid quantity');
+        return;
+      }
+
+      if (currentProduct.DistributorMinOrder && quantity < currentProduct.DistributorMinOrder) {
+        alert(`Minimum order quantity is ${currentProduct.DistributorMinOrder} units`);
+        return;
+      }
+
+      if (quantity > currentProduct.DistributorStock) {
+        alert(`Only ${currentProduct.DistributorStock} units available`);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            DistributorID: currentProduct.DistributorID,
+            items: [{
+              ProductID: currentProduct.ProductID,
+              Quantity: quantity
+            }],
+            PaymentTerms: 'Net 30',
+            Notes: `Order placed from retailer dashboard`
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`Order #${result.OrderID} placed successfully! Total: $${result.TotalAmount.toFixed(2)}`);
+          closeOrderModal();
+          loadCatalog(); // Refresh catalog
+          loadOrders(); // Refresh orders if on that tab
+        } else {
+          alert(result.message || 'Failed to create order');
+        }
+      } catch (error) {
+        console.error('Order error:', error);
+        alert('Failed to place order. Please try again.');
+      }
+    }
+
+    // Load Orders
+    async function loadOrders() {
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/orders`);
+        const orders = await response.json();
+
+        const container = document.getElementById('orders-list');
+        if (orders.length === 0) {
+          container.innerHTML = '<p>No orders yet. Start by ordering from the Distributor Catalog!</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Distributor</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orders.map(order => `
+                <tr>
+                  <td><strong>#${order.OrderID}</strong></td>
+                  <td>${order.DistributorName}</td>
+                  <td>${new Date(order.OrderDate).toLocaleDateString()}</td>
+                  <td>${order.ItemCount} items (${order.TotalUnits} units)</td>
+                  <td><strong>$${parseFloat(order.TotalAmount).toFixed(2)}</strong></td>
+                  <td><strong>${order.Status}</strong></td>
+                  <td>
+                    ${order.Status === 'Shipped' ? `
+                      <button onclick="receiveOrder(${order.OrderID})">Receive</button>
+                    ` : '-'}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (error) {
+        console.error('Failed to load orders:', error);
+        document.getElementById('orders-list').innerHTML = '<p><strong>Failed to load orders. Please try again.</strong></p>';
+      }
+    }
+
+    // Receive Order
+    async function receiveOrder(orderId) {
+      if (!confirm('Confirm that you have received this order? This will update your inventory.')) return;
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/orders/${orderId}/receive`, {
+          method: 'PATCH'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('Order received! Your inventory has been updated.');
+          loadOrders();
+          loadInventory(); // Refresh inventory if on that tab
+        } else {
+          alert(result.message || 'Failed to receive order');
+        }
+      } catch (error) {
+        console.error('Receive order error:', error);
+        alert('Failed to receive order. Please try again.');
+      }
+    }
+
+    // Load Inventory
+    async function loadInventory() {
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/inventory-costs`);
+        const inventory = await response.json();
+
+        const container = document.getElementById('inventory-table-container');
+        if (inventory.length === 0) {
+          container.innerHTML = '<p>No inventory yet. Start by ordering from distributors!</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Stock</th>
+                <th>Cost Price</th>
+                <th>Customer Price</th>
+                <th>Margin</th>
+                <th>Value</th>
+                <th>Supplier</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${inventory.map(item => `
+                <tr>
+                  <td>
+                    <strong>${item.ProductName}</strong><br>
+                    <small>${item.ManufacturerName}</small>
+                  </td>
+                  <td>
+                    <strong>${item.Stock || 0}</strong> units<br>
+                    <span class="badge">${item.StockStatus}</span>
+                  </td>
+                  <td>$${item.CostPrice ? parseFloat(item.CostPrice).toFixed(2) : 'N/A'}</td>
+                  <td>$${item.CustomerPrice ? parseFloat(item.CustomerPrice).toFixed(2) : 'Not Set'}</td>
+                  <td><strong>${item.ProfitMarginPercent ? parseFloat(item.ProfitMarginPercent).toFixed(1) + '%' : 'N/A'}</strong></td>
+                  <td><strong>$${item.InventoryValue ? parseFloat(item.InventoryValue).toFixed(2) : '0.00'}</strong></td>
+                  <td>${item.SupplierName || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (error) {
+        console.error('Failed to load inventory:', error);
+        document.getElementById('inventory-table-container').innerHTML = '<p><strong>Failed to load inventory. Please try again.</strong></p>';
+      }
+    }
+
+    // Load Pricing
+    async function loadPricing() {
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/inventory-costs`);
+        const inventory = await response.json();
+
+        const container = document.getElementById('pricing-table-container');
+        if (inventory.length === 0) {
+          container.innerHTML = '<p>No products to price yet.</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Cost Price</th>
+                <th>Current Customer Price</th>
+                <th>Profit Margin</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${inventory.map(item => `
+                <tr>
+                  <td><strong>${item.ProductName}</strong></td>
+                  <td>$${item.CostPrice ? parseFloat(item.CostPrice).toFixed(2) : 'N/A'}</td>
+                  <td>$${item.CustomerPrice ? parseFloat(item.CustomerPrice).toFixed(2) : 'Not Set'}</td>
+                  <td>
+                    <strong>${item.ProfitMarginPercent ? parseFloat(item.ProfitMarginPercent).toFixed(1) + '%' : 'N/A'}</strong>
+                    ${item.ProfitPerUnit ? `<br><small>($${parseFloat(item.ProfitPerUnit).toFixed(2)}/unit)</small>` : ''}
+                  </td>
+                  <td>
+                    <button onclick="openPricingModal(${item.ProductID}, '${item.ProductName.replace(/'/g, "\\'")}', ${item.CostPrice || 0}, ${item.CustomerPrice || 0})">
+                      Set Price
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (error) {
+        console.error('Failed to load pricing:', error);
+        document.getElementById('pricing-table-container').innerHTML = '<p><strong>Failed to load pricing. Please try again.</strong></p>';
+      }
+    }
+
+    // Pricing Modal
+    function openPricingModal(productId, productName, costPrice, currentPrice) {
+      currentProduct = { ProductID: productId, ProductName: productName, CostPrice: costPrice };
+      
+      document.getElementById('pricing-product-info').innerHTML = `
+        <h3>${productName}</h3>
+        <p>Cost Price: $${costPrice.toFixed(2)}</p>
+        ${currentPrice > 0 ? `<p>Current Price: $${currentPrice.toFixed(2)}</p>` : ''}
+      `;
+
+      const priceInput = document.getElementById('customer-price');
+      priceInput.value = currentPrice > 0 ? currentPrice.toFixed(2) : (costPrice * 1.5).toFixed(2);
+      
+      priceInput.oninput = () => {
+        const price = parseFloat(priceInput.value) || 0;
+        const margin = costPrice > 0 ? (((price - costPrice) / price) * 100).toFixed(1) : 0;
+        const profit = (price - costPrice).toFixed(2);
+        
+        const preview = document.getElementById('margin-preview');
+        if (price < costPrice) {
+          preview.innerHTML = `<p style="color: var(--danger-red); font-weight: bold;">⚠️ Warning: Price below cost! Loss of $${(costPrice - price).toFixed(2)} per unit</p>`;
+        } else {
+          preview.innerHTML = `<p style="color: var(--success-green); font-weight: bold;">✅ Profit Margin: ${margin}% ($${profit} per unit)</p>`;
+        }
+      };
+      
+      priceInput.oninput(); // Trigger initial calculation
+      
+      document.getElementById('pricingModal').style.display = 'block';
+    }
+
+    function closePricingModal() {
+      document.getElementById('pricingModal').style.display = 'none';
+      currentProduct = null;
+    }
+
+    async function savePrice() {
+      const price = parseFloat(document.getElementById('customer-price').value);
+      
+      if (!price || price <= 0) {
+        alert('Please enter a valid price');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/products/${currentProduct.ProductID}/price`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ CustomerPrice: price })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(result.message + (result.warning ? '\n\n' + result.warning : ''));
+          closePricingModal();
+          loadPricing();
+          loadInventory();
+        } else {
+          alert(result.message || 'Failed to update price');
+        }
+      } catch (error) {
+        console.error('Update price error:', error);
+        alert('Failed to update price. Please try again.');
+      }
+    }
+
+    // Load Analytics - REMOVED
+    /*
+    async function loadAnalytics() {
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/analytics`);
+        const analytics = await response.json();
+        ...
+      } catch (error) {
+        console.error('Failed to load analytics:', error);
+        document.getElementById('analytics-content').innerHTML = '<p><strong>Failed to load analytics. Please try again.</strong></p>';
+      }
+    }
+    */
+
+    // Open Order Modal
+    function openOrderModal(productId) {
+      const product = catalogProducts.find(p => p.ProductID === productId);
+      if (!product) return;
+
+      currentProduct = product;
+      document.getElementById('modal-product-info').innerHTML = `
+        <h3 style="margin: 0 0 1rem 0; border-bottom: 1px solid black; padding-bottom: 0.5rem;">${product.ProductName}</h3>
+        <p><strong>Supplier:</strong> ${product.DistributorName}</p>
+        <p><strong>Price:</strong> $${parseFloat(product.DistributorPrice).toFixed(2)} per unit</p>
+        <p><strong>Available:</strong> ${product.DistributorStock} units</p>
+        ${product.DistributorMinOrder ? `<p><strong>Min Order:</strong> ${product.DistributorMinOrder} units</p>` : ''}
+      `;
+
+      const qtyInput = document.getElementById('order-quantity');
+      qtyInput.value = product.DistributorMinOrder || 1;
+      qtyInput.min = product.DistributorMinOrder || 1;
+      qtyInput.max = product.DistributorStock;
+      
+      updateOrderSubtotal();
+      
+      qtyInput.oninput = updateOrderSubtotal;
+      
+      document.getElementById('orderModal').style.display = 'block';
+    }
+
+    function updateOrderSubtotal() {
+      const qty = parseInt(document.getElementById('order-quantity').value) || 0;
+      const subtotal = qty * parseFloat(currentProduct.DistributorPrice);
+      document.getElementById('order-subtotal').textContent = subtotal.toFixed(2);
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').style.display = 'none';
+      currentProduct = null;
+    }
+
+    // Confirm Order
+    async function confirmOrder() {
+      const quantity = parseInt(document.getElementById('order-quantity').value);
+      
+      if (!quantity || quantity < 1) {
+        alert('Please enter a valid quantity');
+        return;
+      }
+
+      if (currentProduct.DistributorMinOrder && quantity < currentProduct.DistributorMinOrder) {
+        alert(`Minimum order quantity is ${currentProduct.DistributorMinOrder} units`);
+        return;
+      }
+
+      if (quantity > currentProduct.DistributorStock) {
+        alert(`Only ${currentProduct.DistributorStock} units available`);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            DistributorID: currentProduct.DistributorID,
+            items: [{
+              ProductID: currentProduct.ProductID,
+              Quantity: quantity
+            }],
+            PaymentTerms: 'Net 30',
+            Notes: `Order placed from retailer dashboard`
+          })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ Order #${result.OrderID} placed successfully!\n\nTotal: $${result.TotalAmount.toFixed(2)}`);
+          closeOrderModal();
+          loadCatalog();
+          loadOrders();
+          loadStatsQuick();
+        } else {
+          alert('❌ ' + (result.message || 'Failed to create order'));
+        }
+      } catch (error) {
+        console.error('Order error:', error);
+        alert('❌ Failed to place order. Please try again.');
+      }
+    }
+
+    // Receive Order
+    async function receiveOrder(orderId) {
+      if (!confirm('Confirm that you have received this order? This will update your inventory.')) return;
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/orders/${orderId}/receive`, {
+          method: 'PATCH'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ Order received! Your inventory has been updated.');
+          loadOrders();
+          loadInventory();
+          loadStatsQuick();
+        } else {
+          alert('❌ ' + (result.message || 'Failed to receive order'));
+        }
+      } catch (error) {
+        console.error('Receive order error:', error);
+        alert('❌ Failed to receive order. Please try again.');
+      }
+    }
+
+    // Pricing Modal
+    function openPricingModal(productId, productName, costPrice, currentPrice) {
+      currentProduct = { ProductID: productId, ProductName: productName, CostPrice: costPrice };
+      
+      document.getElementById('pricing-product-info').innerHTML = `
+        <h3 style="margin: 0 0 10px 0;">${productName}</h3>
+        <p><strong>Cost Price:</strong> $${costPrice.toFixed(2)}</p>
+        ${currentPrice > 0 ? `<p><strong>Current Price:</strong> $${currentPrice.toFixed(2)}</p>` : ''}
+      `;
+
+      const priceInput = document.getElementById('customer-price');
+      priceInput.value = currentPrice > 0 ? currentPrice.toFixed(2) : (costPrice * 1.5).toFixed(2);
+      
+      priceInput.oninput = () => {
+        const price = parseFloat(priceInput.value) || 0;
+        const margin = costPrice > 0 ? (((price - costPrice) / price) * 100).toFixed(1) : 0;
+        const profit = (price - costPrice).toFixed(2);
+        
+        const preview = document.getElementById('margin-preview');
+        if (price < costPrice) {
+          preview.innerHTML = `<p style="color: #f44336; font-weight: bold;">⚠️ Warning: Price below cost! Loss of $${(costPrice - price).toFixed(2)} per unit</p>`;
+        } else {
+          preview.innerHTML = `<p style="color: #4caf50; font-weight: bold;">✅ Profit Margin: ${margin}% ($${profit} per unit)</p>`;
+        }
+      };
+      
+      priceInput.oninput();
+      
+      document.getElementById('pricingModal').style.display = 'block';
+    }
+
+    function closePricingModal() {
+      document.getElementById('pricingModal').style.display = 'none';
+      currentProduct = null;
+    }
+
+    async function savePrice() {
+      const price = parseFloat(document.getElementById('customer-price').value);
+      
+      if (!price || price <= 0) {
+        alert('Please enter a valid price');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/products/${currentProduct.ProductID}/price`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ CustomerPrice: price })
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ ' + result.message + (result.warning ? '\n\n⚠️ ' + result.warning : ''));
+          closePricingModal();
+          loadPricing();
+          loadInventory();
+        } else {
+          alert('❌ ' + (result.message || 'Failed to update price'));
+        }
+      } catch (error) {
+        console.error('Update price error:', error);
+        alert('❌ Failed to update price. Please try again.');
+      }
+    }
+
+    // Close modals on outside click
+    window.onclick = function(event) {
+      if (event.target.className === 'modal') {
+        event.target.style.display = 'none';
+      }
+    }
+
+    // Customer Orders Management
+    let currentStatusFilter = null;
+
+    async function loadCustomerOrders(status = null) {
+      try {
+        const url = status 
+          ? `${API}/retailer/${currentUser.UserID}/customer-orders?status=${status}`
+          : `${API}/retailer/${currentUser.UserID}/customer-orders`;
+        
+        const response = await fetch(url);
+        const orders = await response.json();
+
+        const container = document.getElementById('customer-orders-list');
+        if (orders.length === 0) {
+          container.innerHTML = '<p>No customer orders found.</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th>Delivery Address</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orders.map(order => `
+                <tr>
+                  <td><strong>#${order.OrderID}</strong></td>
+                  <td>
+                    <strong>${order.CustomerName}</strong><br>
+                    <small>${order.CustomerEmail}</small>
+                    ${order.CustomerPhone ? `<br><small>${order.CustomerPhone}</small>` : ''}
+                  </td>
+                  <td>${new Date(order.OrderDate).toLocaleDateString()}</td>
+                  <td>
+                    <strong>${order.ItemCount} items</strong><br>
+                    <small>(${order.TotalUnits} units)</small><br>
+                    <button onclick="viewOrderItems(${order.OrderID}, ${JSON.stringify(order.Items || []).replace(/"/g, '&quot;')})" 
+                            style="padding: 0.25rem 0.5rem; font-size: 0.85rem; margin-top: 0.25rem;">
+                      View Items
+                    </button>
+                  </td>
+                  <td><strong>$${parseFloat(order.TotalAmount || 0).toFixed(2)}</strong></td>
+                  <td><small>${order.ShippingAddress || 'N/A'}</small></td>
+                  <td><strong class="badge">${order.Status}</strong></td>
+                  <td>
+                    ${order.Status === 'Pending' ? `
+                      <button onclick="confirmCustomerOrder(${order.OrderID})" style="background: black; color: white;">
+                        Confirm Order
+                      </button>
+                    ` : order.Status === 'Confirmed' ? `
+                      <button onclick="shipCustomerOrder(${order.OrderID})" style="background: black; color: white;">
+                        Ship Order
+                      </button>
+                    ` : order.Status === 'Shipped' ? `
+                      <span style="color: #4caf50;">✓ Shipped</span>
+                    ` : order.Status === 'Delivered' ? `
+                      <span style="color: #4caf50;">✓ Delivered</span>
+                    ` : '-'}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (error) {
+        console.error('Failed to load customer orders:', error);
+        document.getElementById('customer-orders-list').innerHTML = '<p><strong>Failed to load customer orders. Please try again.</strong></p>';
+      }
+    }
+
+    function filterCustomerOrders(status) {
+      currentStatusFilter = status;
+      
+      // Update filter button styles
+      document.querySelectorAll('[id^="filter-"]').forEach(btn => btn.classList.remove('active'));
+      if (status === null) {
+        document.getElementById('filter-all').classList.add('active');
+      } else {
+        document.getElementById(`filter-${status.toLowerCase()}`).classList.add('active');
+      }
+      
+      // Load orders with filter
+      loadCustomerOrders(status);
+    }
+
+    function viewOrderItems(orderId, items) {
+      if (!items || items.length === 0) {
+        alert('No items found for this order.');
+        return;
+      }
+      
+      const itemsList = items.map(item => 
+        `• ${item.ProductName}: ${item.Quantity} units @ $${parseFloat(item.UnitPriceAtPurchase).toFixed(2)} = $${parseFloat(item.LineTotal).toFixed(2)}`
+      ).join('\n');
+      
+      alert(`Order #${orderId} Items:\n\n${itemsList}`);
+    }
+
+    async function confirmCustomerOrder(orderId) {
+      if (!confirm('Confirm this order? This means you can fulfill it and will ship it soon.')) return;
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/customer-orders/${orderId}/confirm`, {
+          method: 'PATCH'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ Order confirmed successfully!');
+          loadCustomerOrders(currentStatusFilter);
+        } else {
+          alert('❌ ' + (result.message || 'Failed to confirm order'));
+        }
+      } catch (error) {
+        console.error('Confirm order error:', error);
+        alert('❌ Failed to confirm order. Please try again.');
+      }
+    }
+
+    async function shipCustomerOrder(orderId) {
+      if (!confirm('Mark this order as shipped? The customer will be notified.')) return;
+
+      try {
+        const response = await fetch(`${API}/retailer/${currentUser.UserID}/customer-orders/${orderId}/ship`, {
+          method: 'PATCH'
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ Order shipped successfully! Customer has been notified.');
+          loadCustomerOrders(currentStatusFilter);
+        } else {
+          alert('❌ ' + (result.message || 'Failed to ship order'));
+        }
+      } catch (error) {
+        console.error('Ship order error:', error);
+        alert('❌ Failed to ship order. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>

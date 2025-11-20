@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distributor Dashboard - SCM System</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-card .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .stat-card.success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .stat-card.warning { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-card.info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    
+    .section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 25px;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    .section-header h2 {
+      margin: 0;
+      color: #667eea;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s ease;
+    }
+    
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      font-weight: 600;
+    }
+    
+    .tab:hover {
+      color: #667eea;
+      background: #f5f5f5;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    
+    .product-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .product-card:hover {
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      transform: translateY(-3px);
+    }
+    
+    .product-card h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 18px;
+    }
+    
+    .product-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+    
+    .product-info div {
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .product-info label {
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .product-info span {
+      color: #333;
+      font-weight: 600;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .badge.success { background: #d4edda; color: #155724; }
+    .badge.warning { background: #fff3cd; color: #856404; }
+    .badge.danger { background: #f8d7da; color: #721c24; }
+    .badge.info { background: #d1ecf1; color: #0c5460; }
+    .badge.secondary { background: #e2e3e5; color: #383d41; }
+    
+    .order-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+    
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .order-items {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+    }
+    
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .order-item:last-child {
+      border-bottom: none;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    
+    .close-modal:hover {
+      color: #333;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    
+    .order-item-row {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .filter-bar {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-bar select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    
+    .inventory-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    .inventory-table th,
+    .inventory-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .inventory-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .inventory-table tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .profit-positive {
+      color: #28a745;
+      font-weight: 600;
+    }
+    
+    .profit-negative {
+      color: #dc3545;
+      font-weight: 600;
+    }
+    
+    .chart-container {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="assets/logo.png" alt="SCM Logo" style="height: 40px;">
+        <h1>Distributor Dashboard</h1>
+      </div>
+      <div>
+        <span id="userEmail" style="margin-right: 15px; color: #666;"></span>
+        <button class="btn" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="manufacturer-dashboard">
+      <!-- Navigation Tabs -->
+      <div class="dashboard-tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'overview')">📊 Overview</button>
+        <button class="tab-btn" onclick="switchTab(event, 'catalog')">🏭 Manufacturer Catalog</button>
+        <button class="tab-btn" onclick="switchTab(event, 'orders')">🚚 My Orders</button>
+        <button class="tab-btn" onclick="switchTab(event, 'sales')">💰 Sales to Retailers</button>
+        <button class="tab-btn" onclick="switchTab(event, 'inventory')">📋 My Inventory</button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div id="overviewTab" class="tab-content active">
+        <h3>Business Overview</h3>
+        <div id="sales-overview" class="overview-cards"></div>
+        
+        <div class="overview-grid">
+          <div>
+            <h4>Recent Orders</h4>
+            <div id="recent-orders-preview"></div>
+          </div>
+          <div>
+            <h4>Top Suppliers</h4>
+            <div id="top-suppliers-preview"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manufacturer Catalog Tab -->
+      <div id="catalogTab" class="tab-content">
+        <h3>Available Products from Manufacturers</h3>
+        <button class="btn" onclick="refreshCatalog()" style="margin-bottom: 1rem;">🔄 Refresh Catalog</button>
+        <div id="catalogGrid" class="product-grid">
+          <!-- Catalog will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Orders Tab -->
+      <div id="ordersTab" class="tab-content">
+        <h3>My Purchase Orders</h3>
+        
+        <div class="order-filters" style="margin-bottom: 1rem;">
+          <button class="filter-btn active" onclick="filterOrders('All')">All</button>
+          <button class="filter-btn" onclick="filterOrders('Pending')">Pending</button>
+          <button class="filter-btn" onclick="filterOrders('Confirmed')">Confirmed</button>
+          <button class="filter-btn" onclick="filterOrders('Shipped')">Shipped</button>
+          <button class="filter-btn" onclick="filterOrders('Received')">Received</button>
+        </div>
+        
+        <div id="ordersList">
+          <!-- Orders will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Sales to Retailers Tab -->
+      <div id="salesTab" class="tab-content">
+        <h3>Sales to Retailers</h3>
+        <p style="color: #666; margin-bottom: 1rem;">Track orders placed by retailers with your distribution center</p>
+        
+        <div class="order-filters" style="margin-bottom: 1rem;">
+          <button class="filter-btn active" onclick="filterSales('All')">All</button>
+          <button class="filter-btn" onclick="filterSales('Pending')">Pending</button>
+          <button class="filter-btn" onclick="filterSales('Confirmed')">Confirmed</button>
+          <button class="filter-btn" onclick="filterSales('Shipped')">Shipped</button>
+          <button class="filter-btn" onclick="filterSales('Received')">Received</button>
+          <button class="btn" onclick="loadSales()" style="margin-left: auto;">🔄 Refresh</button>
+        </div>
+        
+        <div id="salesList">
+          <!-- Sales orders will be loaded here -->
+        </div>
+        
+        <!-- Sales Order Details Modal -->
+        <div id="salesDetailsModal" style="display: none; margin-top: 2rem; padding: 1.5rem; border: 2px solid black; background: white;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="margin: 0;">Sales Order Details</h4>
+            <button onclick="closeSalesDetails()" style="background: #dc3545; color: white; border: none; padding: 5px 15px; cursor: pointer;">✕ Close</button>
+          </div>
+          <div id="salesDetailsContent"></div>
+        </div>
+      </div>
+
+      <!-- Inventory Tab -->
+      <div id="inventoryTab" class="tab-content">
+        <h3>My Inventory</h3>
+        <button class="btn" onclick="loadInventory()" style="margin-bottom: 1rem;">🔄 Refresh Inventory</button>
+        <table class="inventory-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Manufacturer</th>
+              <th>Available</th>
+              <th>Reserved</th>
+              <th>Purchase Price</th>
+              <th>Retail Price</th>
+              <th>Profit Margin</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryTableBody">
+            <!-- Inventory will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Create Order Modal -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create Purchase Order</h2>
+        <button class="close-modal" onclick="closeOrderModal()">&times;</button>
+      </div>
+      <form id="createOrderForm" onsubmit="submitOrder(event)">
+        <input type="hidden" id="orderManufacturerId">
+        
+        <div class="form-group">
+          <label>Manufacturer:</label>
+          <input type="text" id="orderManufacturerName" readonly>
+        </div>
+        
+        <div id="orderItemsContainer">
+          <div class="order-item-row">
+            <div class="form-group">
+              <label>Product:</label>
+              <input type="text" id="orderProductName" readonly>
+              <input type="hidden" id="orderProductId">
+            </div>
+            
+            <div class="form-group">
+              <label>Quantity:</label>
+              <input type="number" id="orderQuantity" min="1" required>
+              <small id="orderMOQ"></small>
+            </div>
+            
+            <div class="form-group">
+              <label>Unit Price:</label>
+              <input type="text" id="orderUnitPrice" readonly>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Payment Terms:</label>
+          <select id="paymentTerms">
+            <option value="Net 30">Net 30</option>
+            <option value="Net 60">Net 60</option>
+            <option value="Net 90">Net 90</option>
+            <option value="Prepaid">Prepaid</option>
+            <option value="COD">Cash on Delivery</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Notes (Optional):</label>
+          <textarea id="orderNotes" placeholder="Any special instructions..."></textarea>
+        </div>
+        
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary">Create Order</button>
+          <button type="button" class="btn" onclick="closeOrderModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Set Pricing Modal -->
+  <div id="pricingModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Set Retailer Pricing</h2>
+        <button class="close-modal" onclick="closePricingModal()">&times;</button>
+      </div>
+      <form id="setPricingForm" onsubmit="submitPricing(event)">
+        <input type="hidden" id="pricingProductId">
+        
+        <div class="form-group">
+          <label>Product:</label>
+          <input type="text" id="pricingProductName" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>Your Purchase Price:</label>
+          <input type="text" id="pricingPurchasePrice" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>Retailer Selling Price:</label>
+          <input type="number" id="pricingSellPrice" step="0.01" min="0.01" required>
+          <small>Must be higher than your purchase price</small>
+        </div>
+        
+        <div class="form-group">
+          <label>Estimated Profit Margin:</label>
+          <input type="text" id="pricingProfitMargin" readonly>
+        </div>
+        
+        <div class="btn-group">
+          <button type="submit" class="btn btn-primary">Update Pricing</button>
+          <button type="button" class="btn" onclick="closePricingModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+
+    // Initialize
+    async function init() {
+      try {
+        // Try both sessionStorage and localStorage
+        const sessionUser = sessionStorage.getItem('currentUser');
+        const localUser = localStorage.getItem('user');
+        
+        console.log('Session user:', sessionUser ? 'Found' : 'Not found');
+        console.log('Local user:', localUser ? 'Found' : 'Not found');
+        
+        currentUser = JSON.parse(sessionUser || localUser);
+        
+        if (!currentUser) {
+          console.error('No user found in storage');
+          alert('Please log in as a distributor.');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        console.log('Current user loaded:', currentUser);
+        console.log('User role:', currentUser.Role);
+        
+        if (currentUser.Role !== 'Distributor') {
+          console.error('Invalid role:', currentUser.Role);
+          alert('Access denied. This dashboard is for distributors only.');
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        console.log('User authenticated successfully');
+        document.getElementById('userEmail').textContent = currentUser.Email;
+        
+        await loadOverview();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        alert('Error loading dashboard: ' + error.message + '\nPlease try logging in again.');
+        window.location.href = 'index.html';
+      }
+    }
+
+    // Tab Switching
+    function switchTab(event, tabName) {
+      // Update tab buttons
+      document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tabName + 'Tab').classList.add('active');
+      
+      // Load data for the selected tab
+      if (tabName === 'overview') loadOverview();
+      if (tabName === 'catalog') loadCatalog();
+      if (tabName === 'orders') loadOrders();
+      if (tabName === 'sales') loadSales();
+      if (tabName === 'inventory') loadInventory();
+    }
+
+    // Load Overview Tab
+    async function loadOverview() {
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/analytics`);
+        const data = await response.json();
+        
+        // Display overview cards
+        const overviewDiv = document.getElementById('sales-overview');
+        overviewDiv.innerHTML = `
+          <div class="overview-card">
+            <div class="card-label">Total Products</div>
+            <div class="card-value">${data.inventory ? data.inventory.TotalProducts || 0 : 0}</div>
+          </div>
+          <div class="overview-card">
+            <div class="card-label">Available Units</div>
+            <div class="card-value">${data.inventory ? data.inventory.TotalUnitsInStock || 0 : 0}</div>
+          </div>
+          <div class="overview-card">
+            <div class="card-label">Purchase Orders</div>
+            <div class="card-value">${data.purchases ? data.purchases.TotalPurchaseOrders || 0 : 0}</div>
+          </div>
+          <div class="overview-card">
+            <div class="card-label">Inventory Value</div>
+            <div class="card-value">$${data.inventory ? (data.inventory.TotalInventoryValue || 0).toLocaleString() : 0}</div>
+          </div>
+        `;
+        
+        // Display recent orders preview
+        const ordersRes = await fetch(`/api/distributor/${currentUser.UserID}/orders?status=Pending`);
+        const orders = await ordersRes.json();
+        const recentOrdersDiv = document.getElementById('recent-orders-preview');
+        recentOrdersDiv.innerHTML = orders && orders.slice(0, 3).length
+          ? orders.slice(0, 3).map(o => `
+              <div class="list-item">
+                <strong>Order #${o.OrderID}</strong> from ${o.ManufacturerName}<br>
+                <small>$${parseFloat(o.TotalAmount).toFixed(2)} | ${o.ItemCount} items</small>
+              </div>
+            `).join('')
+          : '<p class="empty">No pending orders</p>';
+        
+        // Display top suppliers preview
+        const topSuppliersDiv = document.getElementById('top-suppliers-preview');
+        topSuppliersDiv.innerHTML = data.topSuppliers && data.topSuppliers.slice(0, 3).length
+          ? data.topSuppliers.slice(0, 3).map(s => `
+              <div class="list-item">
+                <strong>${s.CompanyName}</strong><br>
+                <small>${s.OrderCount} orders | $${parseFloat(s.TotalSpent || 0).toFixed(2)}</small>
+              </div>
+            `).join('')
+          : '<p class="empty">No suppliers yet</p>';
+          
+      } catch (e) {
+        console.error('Error loading overview:', e);
+      }
+    }
+
+    // Load Manufacturer Catalog
+    async function loadCatalog() {
+      try {
+        const response = await fetch('/api/distributor/catalog');
+        const products = await response.json();
+        
+        console.log('Catalog loaded:', products.length, 'products');
+        
+        const grid = document.getElementById('catalogGrid');
+        if (!products || products.length === 0) {
+          grid.innerHTML = '<p>No products available from manufacturers.</p>';
+          return;
+        }
+        
+        grid.innerHTML = products.map((p, index) => `
+          <div class="product-card" id="product-${index}">
+            <h3>${p.ProductName}</h3>
+            <p style="color: #666; font-size: 14px; margin: 10px 0;">${p.Description || 'No description'}</p>
+            <div class="product-info">
+              <div><label>Manufacturer:</label><span>${p.ManufacturerName}</span></div>
+              <div><label>Price:</label><span class="profit-positive">${p.ManufacturerPrice ? '$' + p.ManufacturerPrice : 'Contact Manufacturer'}</span></div>
+              <div><label>MOQ:</label><span>${p.MinOrderQuantity || 1} units</span></div>
+              <div><label>In Stock:</label><span style="color: ${p.ManufacturerStock > 0 ? '#4CAF50' : '#F44336'};">${p.ManufacturerStock || 0} units</span></div>
+              <div><label>Lead Time:</label><span>${p.LeadTimeDays || 'N/A'} days</span></div>
+            </div>
+            <button class="btn btn-primary" onclick="openOrderModal(${index})" 
+                    ${p.ManufacturerStock === 0 || !p.ManufacturerPrice ? 'disabled' : ''}>
+              ${p.ManufacturerStock === 0 ? 'Out of Stock' : !p.ManufacturerPrice ? 'Price Not Set' : 'Place Order'}
+            </button>
+          </div>
+        `).join('');
+        
+        // Store products globally for later access
+        window.catalogProducts = products;
+        
+      } catch (error) {
+        console.error('Error loading catalog:', error);
+        document.getElementById('catalogGrid').innerHTML = '<p class="error">Error loading catalog. Please try again.</p>';
+      }
+    }
+
+    function refreshCatalog() {
+      loadCatalog();
+    }
+
+    // Order Modal
+    function openOrderModal(productIndex) {
+      const product = window.catalogProducts[productIndex];
+      if (!product) {
+        alert('Product not found');
+        return;
+      }
+      document.getElementById('orderManufacturerId').value = product.ManufacturerID;
+      document.getElementById('orderManufacturerName').value = product.ManufacturerName;
+      document.getElementById('orderProductId').value = product.ProductID;
+      document.getElementById('orderProductName').value = product.ProductName;
+      document.getElementById('orderUnitPrice').value = '$' + product.ManufacturerPrice;
+      document.getElementById('orderQuantity').value = product.MinOrderQuantity;
+      document.getElementById('orderMOQ').textContent = `Minimum: ${product.MinOrderQuantity} units`;
+      
+      document.getElementById('orderModal').classList.add('active');
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').classList.remove('active');
+      document.getElementById('createOrderForm').reset();
+    }
+
+    async function submitOrder(event) {
+      event.preventDefault();
+      
+      const orderData = {
+        ManufacturerID: parseInt(document.getElementById('orderManufacturerId').value),
+        items: [{
+          ProductID: parseInt(document.getElementById('orderProductId').value),
+          Quantity: parseInt(document.getElementById('orderQuantity').value)
+        }],
+        PaymentTerms: document.getElementById('paymentTerms').value,
+        Notes: document.getElementById('orderNotes').value
+      };
+      
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/orders`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${result.message}\nOrder ID: ${result.OrderID}\nTotal: $${result.TotalAmount.toLocaleString()}\nExpected Delivery: ${result.ExpectedDeliveryDate}`);
+          closeOrderModal();
+          // Switch to orders tab
+          document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+          document.querySelector('.tab-btn:nth-child(3)').classList.add('active'); // Orders is 3rd tab
+          document.getElementById('ordersTab').classList.add('active');
+          loadOrders();
+        } else {
+          alert('❌ ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error creating order:', error);
+        alert('Failed to create order.');
+      }
+    }
+
+    // Load Orders
+    let currentOrderFilter = 'All';
+    
+    function filterOrders(status) {
+      currentOrderFilter = status;
+      
+      // Update filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      loadOrders(status);
+    }
+    
+    async function loadOrders(status = null) {
+      const filterStatus = status || currentOrderFilter;
+      
+      try {
+        const url = filterStatus !== 'All'
+          ? `/api/distributor/${currentUser.UserID}/orders?status=${filterStatus}`
+          : `/api/distributor/${currentUser.UserID}/orders`;
+          
+        const response = await fetch(url);
+        const orders = await response.json();
+        
+        console.log('Orders loaded:', orders.length, 'orders');
+        
+        const ordersList = document.getElementById('ordersList');
+        
+        if (!orders || orders.length === 0) {
+          ordersList.innerHTML = `<p class="empty">No ${filterStatus !== 'All' ? filterStatus.toLowerCase() : ''} orders found.</p>`;
+          return;
+        }
+        
+        ordersList.innerHTML = orders.map(order => `
+          <div class="order-card">
+            <div class="order-header">
+              <div>
+                <h3>Order #${order.OrderID}</h3>
+                <p style="color: #666; margin: 5px 0;">From: ${order.ManufacturerName}</p>
+                <p style="color: #666; margin: 5px 0;">Date: ${new Date(order.OrderDate).toLocaleDateString()}</p>
+              </div>
+              <div style="text-align: right;">
+                <span class="badge ${getStatusBadgeClass(order.Status)}">${order.Status}</span>
+                <p style="font-size: 20px; font-weight: bold; margin: 10px 0;">$${parseFloat(order.TotalAmount || 0).toFixed(2)}</p>
+                ${order.Status === 'Shipped' ? `
+                  <button class="btn btn-primary" onclick="receiveOrder(${order.OrderID})">Mark as Received</button>
+                ` : ''}
+              </div>
+            </div>
+            
+            <div class="order-items">
+              <strong>${order.ItemCount || 0} item(s), ${order.TotalQuantity || 0} total units</strong>
+              ${order.Items && order.Items.length > 0 ? order.Items.map(item => `
+                <div class="order-item">
+                  <span>${item.ProductName}</span>
+                  <span>${item.Quantity} × $${parseFloat(item.UnitPrice).toFixed(2)} = $${parseFloat(item.LineTotal).toFixed(2)}</span>
+                </div>
+              `).join('') : ''}
+            </div>
+            
+            <div style="margin-top: 15px; display: flex; gap: 10px; font-size: 14px;">
+              <div><strong>Payment:</strong> ${order.PaymentTerms}</div>
+              ${order.ExpectedDeliveryDate ? `<div><strong>Expected:</strong> ${new Date(order.ExpectedDeliveryDate).toLocaleDateString()}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading orders:', error);
+        document.getElementById('ordersList').innerHTML = '<p class="error">Error loading orders. Please try again.</p>';
+      }
+    }
+
+    async function receiveOrder(orderId) {
+      if (!confirm('Mark this order as received and update inventory?')) return;
+      
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/orders/${orderId}/receive`, {
+          method: 'PATCH'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ ' + result.message);
+          loadOrders();
+          loadInventory();
+          loadOverview();
+        } else {
+          alert('❌ ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error receiving order:', error);
+        alert('Failed to receive order.');
+      }
+    }
+
+    // Load Sales to Retailers
+    let currentSalesFilter = 'All';
+    let allSalesOrders = [];
+
+    function filterSales(status) {
+      currentSalesFilter = status;
+      
+      // Update active filter button
+      document.querySelectorAll('#salesTab .filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent === status) {
+          btn.classList.add('active');
+        }
+      });
+      
+      loadSales(status === 'All' ? null : status);
+    }
+
+    async function loadSales(status = null) {
+      const filterStatus = status || (currentSalesFilter !== 'All' ? currentSalesFilter : null);
+      
+      try {
+        const url = filterStatus 
+          ? `/api/distributor/${currentUser.UserID}/sales?status=${filterStatus}`
+          : `/api/distributor/${currentUser.UserID}/sales`;
+          
+        const response = await fetch(url);
+        const sales = await response.json();
+        
+        console.log('Sales loaded:', sales.length, 'orders');
+        allSalesOrders = sales;
+        
+        const salesList = document.getElementById('salesList');
+        
+        if (!sales || sales.length === 0) {
+          salesList.innerHTML = `<p class="empty">No ${filterStatus ? filterStatus.toLowerCase() : ''} sales orders found.</p>`;
+          return;
+        }
+        
+        salesList.innerHTML = sales.map(order => `
+          <div class="order-card" style="border-left: 4px solid #28a745;">
+            <div class="order-header">
+              <div>
+                <h3>Order #${order.OrderID}</h3>
+                <p style="color: #666; margin: 5px 0;"><strong>Retailer:</strong> ${order.RetailerName}</p>
+                <p style="color: #666; margin: 5px 0; font-size: 14px;"> ${order.RetailerAddress || 'N/A'}</p>
+                <p style="color: #666; margin: 5px 0;">Date: ${new Date(order.OrderDate).toLocaleDateString()}</p>
+              </div>
+              <div style="text-align: right;">
+                <span class="badge ${getStatusBadgeClass(order.Status)}">${order.Status}</span>
+                <p style="font-size: 20px; font-weight: bold; margin: 10px 0; color: #28a745;">$${parseFloat(order.TotalAmount).toLocaleString()}</p>
+                <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap;">
+                  ${order.Status === 'Pending' ? `
+                    <button class="btn btn-primary" onclick="confirmSalesOrder(${order.OrderID})">✓ Confirm Order</button>
+                  ` : ''}
+                  ${order.Status === 'Confirmed' ? `
+                    <button class="btn btn-primary" onclick="shipSalesOrder(${order.OrderID})">🚚 Ship Order</button>
+                  ` : ''}
+                  <button class="btn" onclick="viewSalesDetails(${order.OrderID})" style="background: #28a745;">📋 View Details</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="order-items">
+              <strong>${order.ItemCount} item(s), ${order.TotalUnits} total units</strong>
+            </div>
+            
+            <div style="margin-top: 15px; display: flex; gap: 15px; font-size: 14px;">
+              <div><strong>Payment:</strong> ${order.PaymentTerms}</div>
+              <div><strong>Status:</strong> ${order.PaymentStatus}</div>
+              ${order.ExpectedDeliveryDate ? `<div><strong>Expected:</strong> ${new Date(order.ExpectedDeliveryDate).toLocaleDateString()}</div>` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading sales:', error);
+        document.getElementById('salesList').innerHTML = '<p class="error">Error loading sales orders. Please try again.</p>';
+      }
+    }
+
+    function viewSalesDetails(orderId) {
+      const order = allSalesOrders.find(o => o.OrderID === orderId);
+      if (!order) {
+        alert('Order not found');
+        return;
+      }
+      
+      const modal = document.getElementById('salesDetailsModal');
+      const content = document.getElementById('salesDetailsContent');
+      
+      content.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+          <div>
+            <h4 style="margin-bottom: 10px; border-bottom: 2px solid black; padding-bottom: 5px;">Order Information</h4>
+            <p><strong>Order ID:</strong> #${order.OrderID}</p>
+            <p><strong>Order Date:</strong> ${new Date(order.OrderDate).toLocaleDateString()}</p>
+            <p><strong>Status:</strong> <span class="badge ${getStatusBadgeClass(order.Status)}">${order.Status}</span></p>
+            <p><strong>Total Amount:</strong> <span style="font-size: 18px; color: #28a745; font-weight: bold;">$${parseFloat(order.TotalAmount).toLocaleString()}</span></p>
+            <p><strong>Payment Terms:</strong> ${order.PaymentTerms}</p>
+            <p><strong>Payment Status:</strong> ${order.PaymentStatus}</p>
+            ${order.ExpectedDeliveryDate ? `<p><strong>Expected Delivery:</strong> ${new Date(order.ExpectedDeliveryDate).toLocaleDateString()}</p>` : ''}
+            ${order.Notes ? `<p><strong>Notes:</strong> ${order.Notes}</p>` : ''}
+          </div>
+          
+          <div>
+            <h4 style="margin-bottom: 10px; border-bottom: 2px solid black; padding-bottom: 5px;">Retailer Information</h4>
+            <p><strong>Company:</strong> ${order.RetailerName}</p>
+            <p><strong>Address:</strong> ${order.RetailerAddress || 'N/A'}</p>
+          </div>
+        </div>
+        
+        <h4 style="margin: 20px 0 10px 0; border-bottom: 2px solid black; padding-bottom: 5px;">Order Items</h4>
+        <table class="inventory-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Manufacturer</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Line Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${order.Items.map(item => `
+              <tr>
+                <td>
+                  <strong>${item.ProductName}</strong><br>
+                  <small style="color: #666;">${item.Description || ''}</small>
+                </td>
+                <td>${item.ManufacturerName}</td>
+                <td><strong>${item.Quantity}</strong> units</td>
+                <td>$${parseFloat(item.UnitPrice).toFixed(2)}</td>
+                <td><strong>$${parseFloat(item.LineTotal).toFixed(2)}</strong></td>
+                <td><span class="badge ${getStatusBadgeClass(item.ItemStatus)}">${item.ItemStatus}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="font-weight: bold; background: #f8f9fa;">
+              <td colspan="4" style="text-align: right;">Total:</td>
+              <td colspan="2">$${parseFloat(order.TotalAmount).toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e7f5ff; border-left: 4px solid #007bff;">
+          <strong>📊 Order Summary:</strong> ${order.ItemCount} items, ${order.TotalUnits} total units
+        </div>
+      `;
+      
+      modal.style.display = 'block';
+      modal.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function closeSalesDetails() {
+      document.getElementById('salesDetailsModal').style.display = 'none';
+    }
+
+    // Confirm Sales Order
+    async function confirmSalesOrder(orderId) {
+      if (!confirm('Confirm this order and reserve inventory?')) return;
+      
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/sales/${orderId}/confirm`, {
+          method: 'PATCH'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ ' + result.message);
+          loadSales();
+          loadInventory();
+          loadOverview();
+        } else {
+          alert('❌ ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error confirming order:', error);
+        alert('Failed to confirm order.');
+      }
+    }
+
+    // Ship Sales Order
+    async function shipSalesOrder(orderId) {
+      if (!confirm('Mark this order as shipped?')) return;
+      
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/sales/${orderId}/ship`, {
+          method: 'PATCH'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert('✅ ' + result.message);
+          loadSales();
+          loadInventory();
+          loadOverview();
+        } else {
+          alert('❌ ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error shipping order:', error);
+        alert('Failed to ship order.');
+      }
+    }
+
+    // Load Inventory
+    async function loadInventory() {
+      try {
+        if (!currentUser || !currentUser.UserID) {
+          throw new Error('User not logged in properly. Please log in again.');
+        }
+        
+        console.log('Loading inventory for UserID:', currentUser.UserID);
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/inventory`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const inventory = await response.json();
+        console.log('Inventory loaded:', inventory.length, 'items');
+        
+        const tbody = document.getElementById('inventoryTableBody');
+        
+        if (!Array.isArray(inventory)) {
+          throw new Error('Invalid inventory data received');
+        }
+        
+        if (inventory.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No inventory yet. Place orders from manufacturers!</td></tr>';
+          return;
+        }
+        
+        // Store inventory globally
+        window.inventoryItems = inventory;
+        
+        tbody.innerHTML = inventory.map((item, index) => {
+          const profitMargin = item.ProfitMargin ? parseFloat(item.ProfitMargin).toFixed(1) + '%' : 'Not Set';
+          const profitClass = item.ProfitMargin && parseFloat(item.ProfitMargin) > 0 ? 'profit-positive' : '';
+          
+          return `
+            <tr>
+              <td><strong>${item.ProductName}</strong></td>
+              <td>${item.ManufacturerName}</td>
+              <td>${item.AvailableForSale}</td>
+              <td>${item.QuantityReserved}</td>
+              <td>$${parseFloat(item.PurchasePriceFromManufacturer).toFixed(2)}</td>
+              <td>${item.SellPriceToRetailer ? '$' + parseFloat(item.SellPriceToRetailer).toFixed(2) : 'Not Set'}</td>
+              <td><span class="${profitClass}">${profitMargin}</span></td>
+              <td>
+                <button class="btn" onclick="openPricingModal(${index})">
+                  Set Price
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading inventory:', error);
+        const errorMsg = error.message || 'Unknown error occurred';
+        document.getElementById('inventoryTableBody').innerHTML = `<tr><td colspan="8" style="text-align: center;" class="error">Error: ${errorMsg}<br><small>Check console for details.</small></td></tr>`;
+      }
+    }
+
+    // Pricing Modal
+    function openPricingModal(itemIndex) {
+      const item = window.inventoryItems[itemIndex];
+      if (!item) {
+        alert('Item not found');
+        return;
+      }
+      document.getElementById('pricingProductId').value = item.ProductID;
+      document.getElementById('pricingProductName').value = item.ProductName;
+      document.getElementById('pricingPurchasePrice').value = '$' + item.PurchasePriceFromManufacturer;
+      document.getElementById('pricingSellPrice').value = item.SellPriceToRetailer || '';
+      
+      updateProfitMargin();
+      
+      document.getElementById('pricingModal').classList.add('active');
+    }
+
+    function closePricingModal() {
+      document.getElementById('pricingModal').classList.remove('active');
+      document.getElementById('setPricingForm').reset();
+    }
+
+    function updateProfitMargin() {
+      const purchasePrice = parseFloat(document.getElementById('pricingPurchasePrice').value.replace('$', ''));
+      const sellPrice = parseFloat(document.getElementById('pricingSellPrice').value);
+      
+      if (sellPrice && purchasePrice) {
+        const margin = ((sellPrice - purchasePrice) / purchasePrice * 100).toFixed(2);
+        document.getElementById('pricingProfitMargin').value = margin + '%';
+      } else {
+        document.getElementById('pricingProfitMargin').value = '';
+      }
+    }
+
+    document.getElementById('pricingSellPrice').addEventListener('input', updateProfitMargin);
+
+    async function submitPricing(event) {
+      event.preventDefault();
+      
+      const productId = document.getElementById('pricingProductId').value;
+      const sellPrice = parseFloat(document.getElementById('pricingSellPrice').value);
+      
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/inventory/${productId}/pricing`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ SellPriceToRetailer: sellPrice })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          alert(`✅ ${result.message}\nProfit Margin: ${result.ProfitMargin}`);
+          closePricingModal();
+          loadInventory();
+        } else {
+          alert('❌ ' + result.message);
+        }
+      } catch (error) {
+        console.error('Error updating pricing:', error);
+        alert('Failed to update pricing.');
+      }
+    }
+
+    // Load Full Analytics - REMOVED
+    /*
+    async function loadAnalytics() {
+      try {
+        const response = await fetch(`/api/distributor/${currentUser.UserID}/analytics`);
+        const data = await response.json();
+        
+        const analyticsDiv = document.getElementById('analytics-dashboard');
+        analyticsDiv.innerHTML = ...
+      } catch (e) {
+        console.error('Error loading analytics:', e);
+        document.getElementById('analytics-dashboard').innerHTML = '<p class="error">Error loading analytics</p>';
+      }
+    }
+    */
+
+    // Helper Functions
+    function getStatusBadgeClass(status) {
+      const classes = {
+        'Pending': 'warning',
+        'Confirmed': 'info',
+        'Shipped': 'info',
+        'Received': 'success',
+        'Cancelled': 'danger'
+      };
+      return classes[status] || 'secondary';
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
+
+    // Initialize on page load
+    init();
+  </script>
+</body>
+</html>

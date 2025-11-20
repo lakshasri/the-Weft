@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distributor Login Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .test-section {
+      background: #f5f5f5;
+      padding: 20px;
+      margin: 20px 0;
+      border: 2px solid #333;
+    }
+    button {
+      background: black;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #333;
+    }
+    pre {
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      overflow-x: auto;
+    }
+    .error { color: red; }
+    .success { color: green; }
+  </style>
+</head>
+<body>
+  <h1>Distributor Dashboard Diagnostic Tool</h1>
+  
+  <div class="test-section">
+    <h2>1. Check Current User</h2>
+    <button onclick="checkUser()">Check Logged In User</button>
+    <pre id="userOutput">Click button to check...</pre>
+  </div>
+  
+  <div class="test-section">
+    <h2>2. Test Quick Login</h2>
+    <button onclick="quickLogin()">Quick Login as ops@speedy-ship.io</button>
+    <pre id="loginOutput">Click button to login...</pre>
+  </div>
+  
+  <div class="test-section">
+    <h2>3. Test Inventory API</h2>
+    <button onclick="testInventory()">Test Inventory Endpoint</button>
+    <pre id="inventoryOutput">Click button to test...</pre>
+  </div>
+  
+  <div class="test-section">
+    <h2>4. Test Sales API (NEW!)</h2>
+    <button onclick="testSales()">Test Sales Endpoint</button>
+    <button onclick="testSalesFiltered()">Test Sales with Status Filter</button>
+    <pre id="salesOutput">Click button to test...</pre>
+  </div>
+  
+  <div class="test-section">
+    <h2>5. Navigate to Dashboard</h2>
+    <button onclick="gotoDashboard()">Go to Distributor Dashboard</button>
+  </div>
+  
+  <script>
+    function checkUser() {
+      const output = document.getElementById('userOutput');
+      try {
+        const sessionUser = sessionStorage.getItem('currentUser');
+        const localUser = localStorage.getItem('user');
+        
+        output.innerHTML = 'Session Storage:\n' + (sessionUser || 'Empty') + '\n\n';
+        output.innerHTML += 'Local Storage:\n' + (localUser || 'Empty') + '\n\n';
+        
+        if (sessionUser || localUser) {
+          const user = JSON.parse(sessionUser || localUser);
+          output.innerHTML += 'Parsed User:\n' + JSON.stringify(user, null, 2);
+          
+          if (user.Role === 'Distributor') {
+            output.innerHTML += '\n\n✅ User is a valid distributor';
+          } else {
+            output.innerHTML += '\n\n❌ User role is: ' + user.Role;
+          }
+        } else {
+          output.innerHTML += '❌ No user logged in';
+        }
+      } catch (error) {
+        output.innerHTML = '❌ Error: ' + error.message;
+      }
+    }
+    
+    async function quickLogin() {
+      const output = document.getElementById('loginOutput');
+      output.innerHTML = 'Logging in...';
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            Email: 'ops@speedy-ship.io',
+            Password: 'password'
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+          localStorage.setItem('user', JSON.stringify(data.user));
+          
+          output.innerHTML = '✅ Login successful!\n\n';
+          output.innerHTML += 'User Data:\n' + JSON.stringify(data.user, null, 2);
+        } else {
+          output.innerHTML = '❌ Login failed: ' + (data.message || 'Unknown error');
+        }
+      } catch (error) {
+        output.innerHTML = '❌ Error: ' + error.message;
+      }
+    }
+    
+    async function testInventory() {
+      const output = document.getElementById('inventoryOutput');
+      output.innerHTML = 'Testing inventory endpoint...';
+      
+      try {
+        // Try to get current user
+        const sessionUser = sessionStorage.getItem('currentUser');
+        const localUser = localStorage.getItem('user');
+        const user = JSON.parse(sessionUser || localUser);
+        
+        if (!user || !user.UserID) {
+          output.innerHTML = '❌ No user logged in. Please login first.';
+          return;
+        }
+        
+        output.innerHTML = `Testing for UserID: ${user.UserID}\n\n`;
+        
+        const response = await fetch(`/api/distributor/${user.UserID}/inventory`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          if (Array.isArray(data)) {
+            output.innerHTML += `✅ Success! Found ${data.length} items\n\n`;
+            output.innerHTML += 'Sample data:\n' + JSON.stringify(data.slice(0, 2), null, 2);
+          } else {
+            output.innerHTML += '❌ Invalid response: ' + JSON.stringify(data);
+          }
+        } else {
+          output.innerHTML += '❌ Error: ' + (data.message || response.statusText);
+        }
+      } catch (error) {
+        output.innerHTML = '❌ Error: ' + error.message;
+      }
+    }
+    
+    async function testSales() {
+      const output = document.getElementById('salesOutput');
+      output.innerHTML = 'Testing sales endpoint...';
+      
+      try {
+        // Try to get current user
+        const sessionUser = sessionStorage.getItem('currentUser');
+        const localUser = localStorage.getItem('user');
+        const user = JSON.parse(sessionUser || localUser);
+        
+        if (!user || !user.UserID) {
+          output.innerHTML = '❌ No user logged in. Please login first.';
+          return;
+        }
+        
+        output.innerHTML = `Testing sales for UserID: ${user.UserID}\n\n`;
+        
+        const response = await fetch(`/api/distributor/${user.UserID}/sales`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          if (Array.isArray(data)) {
+            output.innerHTML += `✅ Success! Found ${data.length} sales orders\n\n`;
+            output.innerHTML += `Sample order:\n${JSON.stringify(data[0], null, 2)}`;
+          } else {
+            output.innerHTML += '❌ Invalid response: ' + JSON.stringify(data);
+          }
+        } else {
+          output.innerHTML += '❌ Error: ' + (data.message || response.statusText);
+        }
+      } catch (error) {
+        output.innerHTML = '❌ Error: ' + error.message;
+      }
+    }
+    
+    async function testSalesFiltered() {
+      const output = document.getElementById('salesOutput');
+      output.innerHTML = 'Testing sales endpoint with filter...';
+      
+      try {
+        const sessionUser = sessionStorage.getItem('currentUser');
+        const localUser = localStorage.getItem('user');
+        const user = JSON.parse(sessionUser || localUser);
+        
+        if (!user || !user.UserID) {
+          output.innerHTML = '❌ No user logged in. Please login first.';
+          return;
+        }
+        
+        output.innerHTML = `Testing filtered sales (Confirmed) for UserID: ${user.UserID}\n\n`;
+        
+        const response = await fetch(`/api/distributor/${user.UserID}/sales?status=Confirmed`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          if (Array.isArray(data)) {
+            output.innerHTML += `✅ Success! Found ${data.length} confirmed orders\n\n`;
+            output.innerHTML += `Data:\n${JSON.stringify(data, null, 2)}`;
+          } else {
+            output.innerHTML += '❌ Invalid response: ' + JSON.stringify(data);
+          }
+        } else {
+          output.innerHTML += '❌ Error: ' + (data.message || response.statusText);
+        }
+      } catch (error) {
+        output.innerHTML = '❌ Error: ' + error.message;
+      }
+    }
+    
+    function gotoDashboard() {
+      window.location.href = 'distributor-dashboard.html';
+    }
+  </script>
+</body>
+</html>
